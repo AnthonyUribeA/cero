@@ -52,4 +52,17 @@ void main() {
     expect(b.debts.length, a.debts.length);
     expect(b.expenses.length, a.expenses.length);
   });
+
+  test('los adelantos aplicados cambian el pago de ese mes y se guardan', () {
+    final s = AppStore();
+    final d = s.debts.first;
+    final start = s.ymNow;
+    s.updateDebt(d.copyWith(extras: {0: 1000}, planStart: start));
+    final nd = s.debtById(d.id);
+    expect(nd.paymentFor(start), closeTo(d.cuota + 1000, 0.01));
+    final b = AppStore();
+    b.fromJson(s.toJson());
+    expect(b.debtById(d.id).extras[0], 1000);
+    expect(b.debtById(d.id).planStart, start);
+  });
 }

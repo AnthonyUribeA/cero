@@ -31,14 +31,14 @@ class HoyScreen extends StatelessWidget {
     final now = s.now;
     final plan = s.plan;
     final cuotas = s.totalCuotas;
-    final paidSum = s.debts.where((d) => s.paid.contains(d.id)).fold(0.0, (t, d) => t + d.cuota);
+    final paidSum = s.debts.where((d) => s.paid.contains(d.id)).fold(0.0, (t, d) => t + d.paymentFor(s.ymNow));
     final pct = cuotas > 0 ? paidSum / cuotas : 0.0;
 
     final ups = <_Upcoming>[
       for (final d in s.debts)
-        if (!s.paid.contains(d.id))
-          _Upcoming(d.name, '${d.owner.label} · ${d.rateLabel}', nextDue(d.payDay, now), d.cuota,
-              Icons.percent, p.red),
+        if (!s.paid.contains(d.id) && _pay(d, nextDue(d.payDay, now)) > 0.005)
+          _Upcoming(d.name, '${d.owner.label} · ${d.rateLabel}', nextDue(d.payDay, now),
+              _pay(d, nextDue(d.payDay, now)), Icons.percent, p.red),
       for (final f in s.fixed)
         if (!s.isFixedPaid(f))
           _Upcoming(f.name, 'Gasto fijo', nextDue(f.day, now), f.amount, fixedIcon(f.name), kFijo),
@@ -210,6 +210,8 @@ class HoyScreen extends StatelessWidget {
       ],
     );
   }
+
+  static double _pay(Debt d, DateTime due) => d.paymentFor(due.year * 12 + due.month - 1);
 
   static String _cap(String t) => t.isEmpty ? t : t[0].toUpperCase() + t.substring(1);
 }

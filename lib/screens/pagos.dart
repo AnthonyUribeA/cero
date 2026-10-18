@@ -22,10 +22,11 @@ class _Ev {
 
 List<_Ev> _eventsOn(AppStore s, DateTime d) {
   final last = daysInMonth(d.year, d.month);
+  final ym = d.year * 12 + d.month - 1;
   return [
     for (final x in s.debts)
-      if (math.min(x.payDay, last) == d.day)
-        _Ev(x.name, '${x.owner.label} · ${x.rateLabel}', x.cuota, isDebt: true, debt: x),
+      if (math.min(x.payDay, last) == d.day && x.paymentFor(ym) > 0.005)
+        _Ev(x.name, '${x.owner.label} · ${x.rateLabel}', x.paymentFor(ym), isDebt: true, debt: x),
     for (final f in s.fixed)
       if (math.min(f.day, last) == d.day) _Ev(f.name, 'Gasto fijo', f.amount, isDebt: false, bill: f),
   ];

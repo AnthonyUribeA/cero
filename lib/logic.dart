@@ -40,11 +40,12 @@ SimResult simulate(
   List<String> order,
   double extra, {
   required bool roll,
+  int? startYm,
 }) {
   final live = debts.map((d) => _Live(d)).toList();
   double budget = extra;
   for (final d in debts) {
-    budget += d.cuota;
+    budget += startYm == null ? d.cuota : d.paymentFor(startYm);
   }
   int months = 0;
   double interest = 0;
@@ -64,7 +65,8 @@ SimResult simulate(
         interest += i;
         monthInterest += i;
         by[l.d.id] = (by[l.d.id] ?? 0) + i;
-        final pay = math.min(l.d.cuota, l.bal);
+        final due = startYm == null ? l.d.cuota : l.d.paymentFor(startYm + months - 1);
+        final pay = math.min(due, l.bal);
         l.bal -= pay;
         spent += pay;
       }
@@ -120,10 +122,10 @@ List<String> snowballOrder(List<Debt> ds) {
 }
 
 /// Extra mensual (de a S/ 50) que hace falta para terminar en [goalMonths].
-double neededExtra(List<Debt> debts, List<String> order, int goalMonths) {
+double neededExtra(List<Debt> debts, List<String> order, int goalMonths, {int? startYm}) {
   double need = 0;
   while (need < 12000 &&
-      simulate(debts, order, need, roll: true).months > goalMonths) {
+      simulate(debts, order, need, roll: true, startYm: startYm).months > goalMonths) {
     need += 50;
   }
   return need;

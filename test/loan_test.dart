@@ -26,6 +26,37 @@ void main() {
     expect(balanceAfter(30000, 0.05, 10, 0), closeTo(30000, 0.5));
   });
 
+  test('100 al 5% en 10 meses con capital fijo: 15, 14.50... y S/ 27.50 de interés', () {
+    final rows = buildSchedule(balance: 100, r: 0.05, method: 1, term: 10);
+    expect(rows.length, 10);
+    expect(rows[0].pay, closeTo(15, 1e-9));
+    expect(rows[1].pay, closeTo(14.5, 1e-9));
+    expect(rows.last.pay, closeTo(10.5, 1e-9));
+    expect(scheduleInterest(rows), closeTo(27.5, 1e-9));
+  });
+
+  test('100 al 5% en 10 meses con cuota fija: S/ 29.50 de interés', () {
+    final rows = buildSchedule(balance: 100, r: 0.05, method: 0, term: 10);
+    expect(rows.length, 10);
+    expect(rows[0].interest, closeTo(5, 1e-9));
+    expect(scheduleInterest(rows), closeTo(29.50, 0.01));
+  });
+
+  test('solo interés: 5 al mes y el capital al final', () {
+    final rows = buildSchedule(balance: 100, r: 0.05, method: 2, term: 10);
+    expect(rows.length, 10);
+    expect(rows.first.pay, closeTo(5, 1e-9));
+    expect(rows.last.pay, closeTo(105, 1e-9));
+  });
+
+  test('un adelanto de capital acorta el plazo y baja el interés', () {
+    final base = buildSchedule(balance: 30000, r: 0.05, method: 0, term: 10);
+    final con = buildSchedule(balance: 30000, r: 0.05, method: 0, term: 10, extras: {1: 5000});
+    expect(con.length, lessThan(base.length));
+    expect(scheduleInterest(con), lessThan(scheduleInterest(base)));
+    expect(con[1].extra, 5000);
+  });
+
   test('TEA y tasa mensual son equivalentes', () {
     expect(teaOf(monthlyOf(0.32)), closeTo(0.32, 1e-9));
   });

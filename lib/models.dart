@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'loan.dart';
 
 enum Owner { tu, pareja, persona3, varios }
 
@@ -59,6 +60,13 @@ class Debt {
   final int? termMonths;
   final int? paidCount;
 
+  /// Forma de pago (ver payMethodNames), adelantos de capital por mes y mes
+  /// (año * 12 + mes - 1) del primer pago del cronograma. Sin [planStart], la
+  /// deuda se paga con [cuota] fija todos los meses.
+  final int method;
+  final Map<int, double> extras;
+  final int? planStart;
+
   const Debt({
     required this.id,
     required this.name,
@@ -72,7 +80,50 @@ class Debt {
     this.principal,
     this.termMonths,
     this.paidCount,
+    this.method = 0,
+    this.extras = const {},
+    this.planStart,
   });
+
+  Debt copyWith({Map<int, double>? extras, int? planStart, int? method, double? cuota}) => Debt(
+        id: id,
+        name: name,
+        kind: kind,
+        owner: owner,
+        balance: balance,
+        rateKind: rateKind,
+        rate: rate,
+        cuota: cuota ?? this.cuota,
+        payDay: payDay,
+        principal: principal,
+        termMonths: termMonths,
+        paidCount: paidCount,
+        method: method ?? this.method,
+        extras: extras ?? this.extras,
+        planStart: planStart ?? this.planStart,
+      );
+
+  /// Cuotas que faltan según el plazo, si se conoce.
+  int? get remainingTerm => termMonths == null ? null : termMonths! - (paidCount ?? 0);
+
+  /// Cronograma completo desde [planStart].
+  List<SchedRow> get schedule => buildSchedule(
+        balance: balance,
+        r: monthlyRate,
+        method: method,
+        cuota: cuota,
+        term: remainingTerm,
+        extras: extras,
+      );
+
+  /// Lo que toca pagar en el mes [ym] (año * 12 + mes - 1). 0 si ya terminó.
+  double paymentFor(int ym) {
+    if (planStart == null) return cuota;
+    final idx = ym - planStart!;
+    if (idx < 0) return 0;
+    final rows = schedule;
+    return idx < rows.length ? rows[idx].pay : 0;
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -87,6 +138,9 @@ class Debt {
         if (principal != null) 'principal': principal,
         if (termMonths != null) 'termMonths': termMonths,
         if (paidCount != null) 'paidCount': paidCount,
+        'method': method,
+        if (extras.isNotEmpty) 'extras': {for (final e in extras.entries) '${e.key}': e.value},
+        if (planStart != null) 'planStart': planStart,
       };
 
   factory Debt.fromJson(Map<String, dynamic> j) => Debt(
@@ -102,6 +156,12 @@ class Debt {
         principal: (j['principal'] as num?)?.toDouble(),
         termMonths: j['termMonths'] as int?,
         paidCount: j['paidCount'] as int?,
+        method: (j['method'] as int?) ?? 0,
+        extras: {
+          for (final e in ((j['extras'] as Map?) ?? const {}).entries)
+            int.parse(e.key as String): (e.value as num).toDouble()
+        },
+        planStart: j['planStart'] as int?,
       );
 
   double get monthlyRate {

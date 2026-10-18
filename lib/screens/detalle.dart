@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../format.dart';
+import '../loan.dart';
 import '../models.dart';
 import '../store.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'cronograma.dart';
 
 class DetalleScreen extends StatelessWidget {
   final String debtId;
@@ -25,17 +27,23 @@ class DetalleScreen extends StatelessWidget {
     final remaining = plan.interestBy[d.id] ?? 0;
     final isPaid = s.paid.contains(d.id);
 
-    // Próximas tres cuotas, solo con la cuota de esta deuda.
-    final next = <(DateTime, double, double, double)>[];
-    var bal = d.balance;
-    for (var k = 0; k < 3 && bal > 0.5; k++) {
-      final i = bal * d.monthlyRate;
-      final pay = math.min(d.cuota, bal + i);
-      final date = DateTime(due.year, due.month + k, 1);
-      final day = math.min(d.payDay, daysInMonth(date.year, date.month));
-      next.add((DateTime(date.year, date.month, day), pay, pay - i, i));
-      bal = bal + i - pay;
-    }
+    // Próximas tres cuotas, según el cronograma de esta deuda.
+    final start = d.planStart ?? s.ymNow;
+    final all = d.planStart != null
+        ? d.schedule
+        : buildSchedule(balance: d.balance, r: d.monthlyRate, method: 0, cuota: d.cuota);
+    final from = math.max(0, s.ymNow - start);
+    final next = <(DateTime, double, double, double)>[
+      for (final r in all.skip(from).take(3))
+        (
+          DateTime((start + r.i) ~/ 12, (start + r.i) % 12 + 1,
+              math.min(d.payDay, daysInMonth((start + r.i) ~/ 12, (start + r.i) % 12 + 1))),
+          r.pay,
+          r.capital + r.extra,
+          r.interest,
+        ),
+    ];
+    final extraTotal = d.extras.values.fold(0.0, (t, v) => t + v);
 
     Widget stat(IconData ic, String v, String l) => Expanded(
           child: panel(
@@ -151,7 +159,7 @@ class DetalleScreen extends StatelessWidget {
                         ),
                         Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('Cuota ${k + 1}', style: ts(p, 14, w: FontWeight.w700)),
+                            Text(k == 0 ? 'Este pago' : 'Luego', style: ts(p, 14, w: FontWeight.w700)),
                             Text('Capital ${money(next[k].$3)} · interés ${money(next[k].$4)}',
                                 style: ts(p, 12, color: p.muted)),
                           ]),
@@ -168,6 +176,48 @@ class DetalleScreen extends StatelessWidget {
                       Text('≈ ${money(remaining)}', style: ts(p, 14, w: FontWeight.w700, color: p.red)),
                     ]),
                   ),
+                ]),
+              ),
+              const SizedBox(height: 14),
+              panel(
+                p,
+                radius: 26,
+                pad: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                onTap: () async {
+                  final res = await Navigator.of(context).push<Map<int, double>>(MaterialPageRoute(
+                    builder: (_) => CronogramaScreen(
+                      title: d.name,
+                      balance: d.balance,
+                      rate: d.monthlyRate,
+                      method: d.method,
+                      cuota: d.cuota,
+                      term: d.remainingTerm,
+                      extras: d.extras,
+                      startYm: start,
+                    ),
+                  ));
+                  if (res != null) {
+                    s.updateDebt(d.copyWith(extras: res, planStart: start));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Listo: tus nuevos pagos ya están en el plan y el calendario.')));
+                    }
+                  }
+                },
+                child: Row(children: [
+                  iconTile(Icons.table_rows_outlined, p.green, p.okBg, size: 44),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Cronograma y adelantos', style: ts(p, 15, w: FontWeight.w700)),
+                      Text(
+                          extraTotal > 0
+                              ? 'Tienes ${money(extraTotal)} de capital adelantado en tu plan'
+                              : 'Mes a mes. Adelanta capital y mira cuánto ahorras',
+                          style: ts(p, 12, color: p.muted)),
+                    ]),
+                  ),
+                  Icon(Icons.chevron_right, color: p.muted),
                 ]),
               ),
               const SizedBox(height: 16),

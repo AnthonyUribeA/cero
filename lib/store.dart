@@ -75,7 +75,8 @@ class AppStore extends ChangeNotifier {
   DateTime get startMonth => DateTime(now.year, now.month);
 
   double get totalDebt => debts.fold(0.0, (s, d) => s + d.balance);
-  double get totalCuotas => debts.fold(0.0, (s, d) => s + d.cuota);
+  int get ymNow => now.year * 12 + now.month - 1;
+  double get totalCuotas => debts.fold(0.0, (s, d) => s + d.paymentFor(ymNow));
   double get totalIncome => people.fold(0.0, (s, p) => s + p.income);
   double get totalInterest => debts.fold(0.0, (s, d) => s + d.firstMonthInterest);
 
@@ -126,9 +127,9 @@ class AppStore extends ChangeNotifier {
       ? avalancheOrder(debts)
       : snowballOrder(debts);
 
-  SimResult get plan => simulate(debts, order, extra, roll: true);
-  SimResult get base => simulate(debts, avalancheOrder(debts), 0, roll: false);
-  double get needForGoal => neededExtra(debts, order, goalMonths);
+  SimResult get plan => simulate(debts, order, extra, roll: true, startYm: ymNow);
+  SimResult get base => simulate(debts, avalancheOrder(debts), 0, roll: false, startYm: ymNow);
+  double get needForGoal => neededExtra(debts, order, goalMonths, startYm: ymNow);
 
   Debt debtById(String id) => debts.firstWhere((d) => d.id == id);
 
@@ -169,6 +170,12 @@ class AppStore extends ChangeNotifier {
 
   void addDebt(Debt d) {
     debts.add(d);
+    notifyListeners();
+  }
+
+  void updateDebt(Debt d) {
+    final i = debts.indexWhere((x) => x.id == d.id);
+    if (i >= 0) debts[i] = d;
     notifyListeners();
   }
 
