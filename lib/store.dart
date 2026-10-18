@@ -148,7 +148,7 @@ class AppStore extends ChangeNotifier {
   }
 
   void setGoal(int m) {
-    goalMonths = m.clamp(6, 24).toInt();
+    goalMonths = m.clamp(3, 60).toInt();
     notifyListeners();
   }
 

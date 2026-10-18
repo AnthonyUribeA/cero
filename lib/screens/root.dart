@@ -40,7 +40,7 @@ class _RootShellState extends State<RootShell> {
                 HoyScreen(onTab: (i) => setState(() => index = i)),
                 const DeudasScreen(),
                 const GastosScreen(),
-                const SafeArea(bottom: false, child: PlanScreen()),
+                const PlanScreen(),
                 const MasScreen(),
               ],
             ),

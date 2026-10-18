@@ -126,7 +126,7 @@ class HoyScreen extends StatelessWidget {
                 ]),
                 const SizedBox(height: 14),
                 wideButton(p, 'Ver pagos', () {
-                  Navigator.of(context).push(subPage(const PagosScreen()));
+                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen()));
                 }),
               ]),
             ),
@@ -135,7 +135,7 @@ class HoyScreen extends StatelessWidget {
               tile(Icons.track_changes, 'Plan', () => onTab(3)),
               tile(Icons.account_balance_wallet_outlined, 'Gastos', () => onTab(2)),
               tile(Icons.check_box_outlined, 'Pagos', () {
-                Navigator.of(context).push(subPage(const PagosScreen()));
+                Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen()));
               }),
               tile(Icons.file_download_outlined, 'Excel', () => exportExcel(context, s)),
             ]),
@@ -163,7 +163,7 @@ class HoyScreen extends StatelessWidget {
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text('Próximos pagos', style: ts(p, 21, w: FontWeight.w600)),
               GestureDetector(
-                onTap: () => Navigator.of(context).push(subPage(const PagosScreen())),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen())),
                 child: Text('Ver todos', style: ts(p, 14, w: FontWeight.w600, color: p.green)),
               ),
             ]),
