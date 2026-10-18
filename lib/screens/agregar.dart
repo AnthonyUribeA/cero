@@ -7,6 +7,13 @@ import '../theme.dart';
 import '../widgets.dart';
 
 /// Resultado del cálculo antes de guardar.
+/// Soles con céntimos para montos chicos, sin céntimos para montos grandes.
+String _m(double v) {
+  if (v.abs() >= 1000) return money(v);
+  final neg = v < 0;
+  return '${neg ? '−' : ''}S/ ${v.abs().toStringAsFixed(2)}';
+}
+
 class _Preview {
   final double balance;
   final double cuota;
@@ -122,6 +129,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
           months: plazo,
           interest: c * plazo - p,
           term: plazo,
+          warn: r <= 0 ? 'Falta la tasa de interés: sin ella se calcula como si no cobrara interés.' : null,
         );
       case DebtKind.banco:
         final c = _num(cuota);
@@ -153,7 +161,9 @@ class _AgregarScreenState extends State<AgregarScreen> {
           rateKind: r <= 0 ? RateKind.ninguna : (rateMonthly ? RateKind.mensual : RateKind.tea),
           months: res.$1 < 0 ? null : res.$1,
           interest: res.$2,
-          warn: res.$1 < 0 ? 'Con esa cuota no cubres ni el interés: la deuda crece.' : null,
+          warn: r <= 0
+              ? 'Falta la tasa (TEA): sin ella se calcula como si no cobrara interés.'
+              : (res.$1 < 0 ? 'Con esa cuota no cubres ni el interés: la deuda crece.' : null),
         );
       case DebtKind.cuota:
         final n = _count;
@@ -232,7 +242,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
                   cursorColor: p.green,
                   decoration: InputDecoration(
                     hintText: hint,
-                    hintStyle: ts(p, 16, color: p.muted),
+                    hintStyle: ts(p, 16, color: p.muted.withValues(alpha: 0.55)),
                     isCollapsed: true,
                     border: InputBorder.none,
                   ),
@@ -263,8 +273,8 @@ class _AgregarScreenState extends State<AgregarScreen> {
                   style: ts(p, 16, w: FontWeight.w600),
                   cursorColor: p.green,
                   decoration: InputDecoration(
-                    hintText: rateMonthly ? '5' : '68',
-                    hintStyle: ts(p, 16, color: p.muted),
+                    hintText: rateMonthly ? 'Ej. 5' : 'Ej. 68',
+                    hintStyle: ts(p, 16, color: p.muted.withValues(alpha: 0.55)),
                     suffixText: '%',
                     isCollapsed: true,
                     border: InputBorder.none,
@@ -303,7 +313,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
       case DebtKind.prestamista:
       case DebtKind.otro:
         specific = [
-          field('¿Cuánto te prestaron? (o lo que debes hoy)', amount, '30,000', prefix: 'S/ '),
+          field('¿Cuánto te prestaron? (o lo que debes hoy)', amount, 'Ej. 30,000', prefix: 'S/ '),
           rateField(),
           label('¿Cómo le pagas?'),
           Row(children: [
@@ -338,11 +348,11 @@ class _AgregarScreenState extends State<AgregarScreen> {
         break;
       case DebtKind.banco:
         specific = [
-          field('Monto que te prestaron', amount, '30,000', prefix: 'S/ '),
+          field('Monto que te prestaron', amount, 'Ej. 30,000', prefix: 'S/ '),
           Row(children: [
-            Expanded(child: field('Cuota mensual', cuota, '1,450', prefix: 'S/ ')),
+            Expanded(child: field('Cuota mensual', cuota, 'Ej. 1,450', prefix: 'S/ ')),
             const SizedBox(width: 10),
-            Expanded(child: field('Número de cuotas', count, '24')),
+            Expanded(child: field('Número de cuotas', count, 'Ej. 24')),
           ]),
           paidStepper(_count),
           const SizedBox(height: 6),
@@ -352,15 +362,15 @@ class _AgregarScreenState extends State<AgregarScreen> {
         break;
       case DebtKind.tarjeta:
         specific = [
-          field('Deuda actual de la tarjeta', amount, '8,000', prefix: 'S/ '),
+          field('Deuda actual de la tarjeta', amount, 'Ej. 8,000', prefix: 'S/ '),
           rateField(),
-          field('¿Cuánto pagas al mes?', cuota, '600', prefix: 'S/ '),
+          field('¿Cuánto pagas al mes?', cuota, 'Ej. 600', prefix: 'S/ '),
         ];
         break;
       case DebtKind.cuota:
         specific = [
-          field('Precio total en cuotas', amount, '12,000', prefix: 'S/ '),
-          field('Número de cuotas', count, '12'),
+          field('Precio total en cuotas', amount, 'Ej. 12,000', prefix: 'S/ '),
+          field('Número de cuotas', count, 'Ej. 12'),
           paidStepper(_count),
         ];
         break;
@@ -487,7 +497,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
         Text(pv.months == null ? 'Lo que pagarías' : 'Tu plan con esta deuda',
             style: hs(13, w: FontWeight.w700, color: mint)),
         const SizedBox(height: 4),
-        Text('${money(pv.cuota)} al mes', style: hs(30, w: FontWeight.w700, ls: -0.6)),
+        Text('${_m(pv.cuota)} al mes', style: hs(30, w: FontWeight.w700, ls: -0.6)),
         if (pv.months != null)
           Text(
               pv.months == 0
@@ -495,13 +505,13 @@ class _AgregarScreenState extends State<AgregarScreen> {
                   : 'Terminas en ${pv.months} ${pv.months == 1 ? 'mes' : 'meses'}, en ${monthLabel(s.startMonth, pv.months!, long: true)}.',
               style: hs(14, color: const Color(0xD9FFFFFF))),
         const SizedBox(height: 6),
-        if (pv.term != null && kind == DebtKind.banco) kv('Te queda por pagar', money(pv.balance)),
+        if (pv.term != null && kind == DebtKind.banco) kv('Te queda por pagar', _m(pv.balance)),
         if (pv.paidCount != null && pv.term != null)
           kv('Vas en la cuota', '${(pv.paidCount! + 1).clamp(1, pv.term!)} de ${pv.term}'),
-        kv(pv.months == null ? 'Interés en $plazo meses' : 'Interés que pagarás', money(pv.interest),
+        kv(pv.months == null ? 'Interés en $plazo meses' : 'Interés que pagarás', _m(pv.interest),
             c: pv.interest > 0 ? const Color(0xFFFF9F9F) : mint),
         if (pv.months != null && pv.months! > 0)
-          kv('Total que pagarás', money(pv.cuota * pv.months!)),
+          kv('Total que pagarás', _m(pv.cuota * pv.months!)),
         if (monthly > 0) kv('Tasa', '${(monthly * 100).toStringAsFixed(2)}% mensual · TEA ${(teaOf(monthly) * 100).toStringAsFixed(1)}%'),
         if (pv.warn != null) ...[
           const SizedBox(height: 10),
@@ -510,8 +520,8 @@ class _AgregarScreenState extends State<AgregarScreen> {
         if (onlyInterest && (kind == DebtKind.prestamista || kind == DebtKind.otro)) ...[
           const SizedBox(height: 6),
           Text(
-              'En $plazo meses pagas ${money(pv.interest)} y sigues debiendo ${money(pv.balance)}. '
-              'Con cuotas de ${money(amortCuota(pv.balance, monthly, plazo))} la cierras en ese mismo plazo pagando ${money(amortCuota(pv.balance, monthly, plazo) * plazo - pv.balance)} de interés.',
+              'En $plazo meses pagas ${_m(pv.interest)} y sigues debiendo ${_m(pv.balance)}. '
+              'Con cuotas de ${_m(amortCuota(pv.balance, monthly, plazo))} la cierras en ese mismo plazo pagando ${_m(amortCuota(pv.balance, monthly, plazo) * plazo - pv.balance)} de interés.',
               style: hs(13, color: const Color(0xD9FFFFFF)).copyWith(height: 1.5)),
         ],
       ]),
@@ -552,11 +562,11 @@ class _AgregarScreenState extends State<AgregarScreen> {
                           color: n == plazo ? p.green : p.text)),
                 ),
                 Expanded(
-                  child: Text(money(amortCuota(pr, r, n)),
+                  child: Text(_m(amortCuota(pr, r, n)),
                       textAlign: TextAlign.right, style: ts(p, 14, w: FontWeight.w700, tab: true)),
                 ),
                 Expanded(
-                  child: Text(money(amortCuota(pr, r, n) * n - pr),
+                  child: Text(_m(amortCuota(pr, r, n) * n - pr),
                       textAlign: TextAlign.right,
                       style: ts(p, 14, w: FontWeight.w700, tab: true, color: p.red)),
                 ),
@@ -565,7 +575,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
           ),
         ],
         const SizedBox(height: 4),
-        Text('Solo interés: ${money(pr * r)} al mes y la deuda no baja.',
+        Text('Solo interés: ${_m(pr * r)} al mes y la deuda no baja.',
             style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
       ]),
     );
