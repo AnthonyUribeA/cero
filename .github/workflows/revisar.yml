@@ -1,4 +1,5 @@
 # Revisa el código en cada cambio: análisis y pruebas. Gratis y sin Mac.
+# Los problemas salen como anotaciones en la página del cambio.
 name: Revisar
 on:
   push:
@@ -14,5 +15,25 @@ jobs:
       - name: Generar carpetas de plataforma
         run: flutter create --platforms=ios,android --org com.auribe --project-name cero .
       - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+      - name: Analizar
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos > analyze.txt 2>&1
+          code=$?
+          cat analyze.txt
+          grep -E '^\s*(error|warning|info) •' analyze.txt | head -60 | while IFS= read -r l; do
+            echo "::error title=analyze::$(echo "$l" | tr -s ' ')"
+          done
+          exit $code
+      - name: Probar
+        if: always()
+        run: |
+          set +e
+          flutter test > test.txt 2>&1
+          code=$?
+          cat test.txt
+          if [ $code -ne 0 ]; then
+            msg=$(tail -n 40 test.txt | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=test::$msg"
+          fi
+          exit $code
