@@ -85,6 +85,11 @@ class DetalleScreen extends StatelessWidget {
                   style: hs(13,
                       w: FontWeight.w600,
                       color: d.monthlyRate > 0 ? const Color(0xFFFF9F9F) : mint)),
+              if (d.principal != null && d.termMonths != null) ...[
+                const SizedBox(height: 4),
+                Text('Préstamo de ${money(d.principal!)} en ${d.termMonths} cuotas',
+                    style: hs(13, color: const Color(0xB3FFFFFF))),
+              ],
             ]),
           ),
           Padding(

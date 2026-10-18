@@ -54,6 +54,11 @@ class Debt {
   final double cuota;
   final int payDay;
 
+  /// Opcional: monto que te prestaron, número total de cuotas y cuántas ya pagaste.
+  final double? principal;
+  final int? termMonths;
+  final int? paidCount;
+
   const Debt({
     required this.id,
     required this.name,
@@ -64,6 +69,9 @@ class Debt {
     required this.rate,
     required this.cuota,
     required this.payDay,
+    this.principal,
+    this.termMonths,
+    this.paidCount,
   });
 
   Map<String, dynamic> toJson() => {
@@ -76,6 +84,9 @@ class Debt {
         'rate': rate,
         'cuota': cuota,
         'payDay': payDay,
+        if (principal != null) 'principal': principal,
+        if (termMonths != null) 'termMonths': termMonths,
+        if (paidCount != null) 'paidCount': paidCount,
       };
 
   factory Debt.fromJson(Map<String, dynamic> j) => Debt(
@@ -88,6 +99,9 @@ class Debt {
         rate: (j['rate'] as num).toDouble(),
         cuota: (j['cuota'] as num).toDouble(),
         payDay: j['payDay'] as int,
+        principal: (j['principal'] as num?)?.toDouble(),
+        termMonths: j['termMonths'] as int?,
+        paidCount: j['paidCount'] as int?,
       );
 
   double get monthlyRate {
