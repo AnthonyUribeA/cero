@@ -1,4 +1,3 @@
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'theme.dart';
@@ -80,7 +79,7 @@ Widget roundButton(Pal p, IconData icon, VoidCallback? onTap,
         ),
         child: Icon(icon,
             size: 20,
-            color: primary ? p.onPri : (enabled ? p.text : p.muted.withOpacity(0.5))),
+            color: primary ? p.onPri : (enabled ? p.text : p.muted.withValues(alpha: 0.5))),
       ),
     ),
   );
@@ -186,7 +185,7 @@ Widget switchTile(Pal p, String title, String sub, bool value, ValueChanged<bool
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.white,
+          activeThumbColor: Colors.white,
           activeTrackColor: p.greenFill,
           inactiveThumbColor: Colors.white,
           inactiveTrackColor: p.track,
