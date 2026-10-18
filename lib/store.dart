@@ -166,6 +166,18 @@ class AppStore extends ChangeNotifier {
         return t + (r.isEmpty ? 0 : r.first.capital + r.first.extra);
       });
 
+  /// Interés que pagas este mes en cada deuda, de mayor a menor.
+  List<(Debt, double)> get interestByDebt {
+    final out = <(Debt, double)>[
+      for (final d in current)
+        (d, d.schedule.isEmpty ? 0.0 : d.schedule.first.interest),
+    ]..removeWhere((e) => e.$2 <= 0.005);
+    out.sort((a, b) => b.$2.compareTo(a.$2));
+    return out;
+  }
+
+  double get interestThisMonth => interestByDebt.fold(0.0, (t, e) => t + e.$2);
+
   /// Lo que queda libre tras cuotas, fijos, variables y el tope de hormiga.
   double get freeMargin =>
       totalIncome + extraIncomeMonth - totalCuotas - fixedTotal - varBudgetTotal - hormigaCap;

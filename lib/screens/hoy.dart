@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'ajustes.dart';
 import 'arranque.dart';
+import 'detalle.dart';
 import 'pagos.dart';
 
 class _Upcoming {
@@ -293,7 +294,75 @@ class HoyScreen extends StatelessWidget {
             'Hormiga ${money(s.hormigaSpent)} de ${money(s.hormigaCap)}',
             frac: s.hormigaCap > 0 ? s.hormigaSpent / s.hormigaCap : 0, onTap: () => onTab(2)),
       ]),
+      const SizedBox(height: 12),
+      _interestCard(context, p, s),
     ]);
+  }
+
+  Widget _interestCard(BuildContext context, Pal p, AppStore s) {
+    final interest = s.interestThisMonth;
+    final capital = s.capitalThisMonth;
+    final cuotas = interest + capital;
+    final pct = cuotas > 0 ? (interest / cuotas * 100).round() : 0;
+    final top = s.interestByDebt.take(4).toList();
+    return panel(
+      p,
+      radius: 26,
+      pad: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          iconTile(Ic.percent, p.red, p.redFill.withValues(alpha: 0.16), size: 34),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Interés de este mes', style: ts(p, 14, w: FontWeight.w700, color: p.muted))),
+        ]),
+        const SizedBox(height: 10),
+        Text(money(interest), style: ts(p, 32, w: FontWeight.w700, ls: -0.8, tab: true, h: 1.1, color: p.red)),
+        const SizedBox(height: 4),
+        Text(
+            interest <= 0.5
+                ? 'Este mes no pagas intereses.'
+                : 'De cada S/ 100 que pagas en cuotas, S/ $pct se van en interés y S/ ${100 - pct} bajan tu deuda.',
+            style: ts(p, 13, color: p.muted, h: 1.45)),
+        const SizedBox(height: 12),
+        splitBar(p, [MapEntry(interest, p.redFill), MapEntry(capital, p.greenFill)], height: 12),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('Interés ${money(interest)}', style: ts(p, 12, w: FontWeight.w700, color: p.red)),
+          Text('Baja la deuda ${money(capital)}', style: ts(p, 12, w: FontWeight.w700, color: p.green)),
+        ]),
+        if (top.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          divider(p),
+          const SizedBox(height: 6),
+          Text('Dónde pagas más interés', style: ts(p, 12, w: FontWeight.w700, color: p.muted)),
+          for (final e in top)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: (_) => DetalleScreen(debtId: e.$1.id))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(e.$1.name,
+                        maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(p, 14, w: FontWeight.w600)),
+                  ),
+                  SizedBox(
+                    width: 70,
+                    child: progressBar(p, interest > 0 ? e.$2 / interest : 0, p.redFill, height: 6),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 74,
+                    child: Text(money(e.$2),
+                        textAlign: TextAlign.right, style: ts(p, 14, w: FontWeight.w700, tab: true)),
+                  ),
+                ]),
+              ),
+            ),
+        ],
+      ]),
+    );
   }
 
   static double _pay(Debt d, DateTime due) => d.paymentFor(due.year * 12 + due.month - 1);

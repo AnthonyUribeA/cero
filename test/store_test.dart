@@ -94,4 +94,12 @@ void main() {
     expect(s.availableNow, closeTo(antes - s.debts.first.paymentFor(s.ymNow), 0.01));
     expect(s.endOfMonth, closeTo(s.freeMargin, 0.01));
   });
+
+  test('interés del mes: suma de cada deuda y cuadra con la cuota', () {
+    final s = AppStore();
+    // Con los datos de ejemplo, el primer mes se pagan unos S/ 5,806 de interés.
+    expect(s.interestThisMonth, closeTo(5806, 2));
+    expect(s.interestThisMonth + s.capitalThisMonth, closeTo(s.totalCuotas, 1));
+    expect(s.interestByDebt.first.$2, greaterThanOrEqualTo(s.interestByDebt.last.$2));
+  });
 }
