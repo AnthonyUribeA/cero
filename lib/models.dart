@@ -66,6 +66,30 @@ class Debt {
     required this.payDay,
   });
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'kind': kind.index,
+        'owner': owner.index,
+        'balance': balance,
+        'rateKind': rateKind.index,
+        'rate': rate,
+        'cuota': cuota,
+        'payDay': payDay,
+      };
+
+  factory Debt.fromJson(Map<String, dynamic> j) => Debt(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        kind: DebtKind.values[j['kind'] as int],
+        owner: Owner.values[j['owner'] as int],
+        balance: (j['balance'] as num).toDouble(),
+        rateKind: RateKind.values[j['rateKind'] as int],
+        rate: (j['rate'] as num).toDouble(),
+        cuota: (j['cuota'] as num).toDouble(),
+        payDay: j['payDay'] as int,
+      );
+
   double get monthlyRate {
     switch (rateKind) {
       case RateKind.mensual:
@@ -116,4 +140,113 @@ class Person {
     required this.payDay,
     required this.income,
   });
+
+  Map<String, dynamic> toJson() =>
+      {'name': name, 'short': short, 'payDay': payDay, 'income': income};
+
+  factory Person.fromJson(Map<String, dynamic> j) => Person(
+        name: j['name'] as String,
+        short: j['short'] as String,
+        payDay: j['payDay'] as int,
+        income: (j['income'] as num).toDouble(),
+      );
+}
+
+/// Gasto fijo del mes: alquiler, luz, agua, internet...
+class FixedBill {
+  final String id;
+  final String name;
+  final double amount;
+  final int day;
+
+  const FixedBill({required this.id, required this.name, required this.amount, required this.day});
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'amount': amount, 'day': day};
+
+  factory FixedBill.fromJson(Map<String, dynamic> j) => FixedBill(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        amount: (j['amount'] as num).toDouble(),
+        day: j['day'] as int,
+      );
+}
+
+enum ExpenseKind { variable, hormiga }
+
+const hormigaCats = ['Delivery', 'Café', 'Snacks', 'Taxi', 'Otros'];
+const variableCats = ['Comida', 'Transporte', 'Salud', 'Otros'];
+const payMethods = ['Yape', 'Efectivo', 'Tarjeta'];
+
+/// Un gasto anotado: variable (comida, transporte) o hormiga (café, snacks).
+class Expense {
+  final String id;
+  final ExpenseKind kind;
+  final String category;
+  final String note;
+  final double amount;
+  final DateTime date;
+  final String method;
+
+  const Expense({
+    required this.id,
+    required this.kind,
+    required this.category,
+    required this.note,
+    required this.amount,
+    required this.date,
+    required this.method,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'kind': kind.index,
+        'category': category,
+        'note': note,
+        'amount': amount,
+        'date': date.millisecondsSinceEpoch,
+        'method': method,
+      };
+
+  factory Expense.fromJson(Map<String, dynamic> j) => Expense(
+        id: j['id'] as String,
+        kind: ExpenseKind.values[j['kind'] as int],
+        category: j['category'] as String,
+        note: j['note'] as String,
+        amount: (j['amount'] as num).toDouble(),
+        date: DateTime.fromMillisecondsSinceEpoch(j['date'] as int),
+        method: j['method'] as String,
+      );
+}
+
+/// Ingreso extra: un aporte de la familia, un trabajo aparte...
+class IncomeItem {
+  final String id;
+  final String label;
+  final double amount;
+  final DateTime date;
+  final String tag;
+
+  const IncomeItem({
+    required this.id,
+    required this.label,
+    required this.amount,
+    required this.date,
+    required this.tag,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'label': label,
+        'amount': amount,
+        'date': date.millisecondsSinceEpoch,
+        'tag': tag,
+      };
+
+  factory IncomeItem.fromJson(Map<String, dynamic> j) => IncomeItem(
+        id: j['id'] as String,
+        label: j['label'] as String,
+        amount: (j['amount'] as num).toDouble(),
+        date: DateTime.fromMillisecondsSinceEpoch(j['date'] as int),
+        tag: j['tag'] as String,
+      );
 }

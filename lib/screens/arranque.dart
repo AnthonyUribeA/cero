@@ -5,27 +5,29 @@ import 'root.dart';
 
 class CeroMark extends StatelessWidget {
   final double size;
-  const CeroMark({super.key, this.size = 120});
+  final Color? ring;
+  const CeroMark({super.key, this.size = 120, this.ring});
 
   @override
   Widget build(BuildContext context) {
     final p = Pal.of(context);
-    return CustomPaint(size: Size(size, size), painter: _MarkPainter(p));
+    return CustomPaint(size: Size(size, size), painter: _MarkPainter(p, ring));
   }
 }
 
 class _MarkPainter extends CustomPainter {
   final Pal p;
-  _MarkPainter(this.p);
+  final Color? ring;
+  _MarkPainter(this.p, this.ring);
 
   @override
   void paint(Canvas canvas, Size size) {
     final k = size.width / 120;
-    final ring = Paint()
-      ..color = p.pri
+    final ringPaint = Paint()
+      ..color = ring ?? p.text
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12 * k;
-    canvas.drawCircle(Offset(60 * k, 60 * k), 32 * k, ring);
+    canvas.drawCircle(Offset(60 * k, 60 * k), 32 * k, ringPaint);
     final tick = Paint()
       ..color = p.greenFill
       ..style = PaintingStyle.stroke
@@ -40,7 +42,7 @@ class _MarkPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _MarkPainter old) => old.p != p;
+  bool shouldRepaint(covariant _MarkPainter old) => old.p != p || old.ring != ring;
 }
 
 class ArranqueScreen extends StatefulWidget {
@@ -67,32 +69,42 @@ class _ArranqueScreenState extends State<ArranqueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = Pal.of(context);
     return Scaffold(
-      backgroundColor: p.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CeroMark(),
-                    const SizedBox(height: 18),
-                    Text('Cero', style: ts(p, 44, w: FontWeight.w700, ls: -1.2)),
-                    const SizedBox(height: 8),
-                    Text('Sal de tus deudas, poco a poco', style: ts(p, 15, color: p.muted)),
-                  ],
+      backgroundColor: Colors.black,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, 1.1),
+            radius: 1.2,
+            colors: [Color(0xFF0F5A45), Color(0xFF0A2A22), Colors.black],
+            stops: [0, 0.45, 0.85],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CeroMark(ring: Colors.white),
+                      const SizedBox(height: 18),
+                      Text('Cero', style: hs(46, w: FontWeight.w700, ls: -1.2)),
+                      const SizedBox(height: 8),
+                      Text('Tus deudas, camino a cero',
+                          style: hs(16, color: const Color(0xFF38E0A8), w: FontWeight.w600)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 32),
-              child: Text('Hecho por A. Uribe',
-                  style: ts(p, 12, w: FontWeight.w600, color: p.muted, ls: 0.3)),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(bottom: 32),
+                child: Text('Hecho por A. Uribe',
+                    style: hs(12, w: FontWeight.w600, color: const Color(0x99FFFFFF), ls: 0.3)),
+              ),
+            ],
+          ),
         ),
       ),
     );

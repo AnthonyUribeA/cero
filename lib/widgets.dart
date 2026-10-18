@@ -74,12 +74,12 @@ Widget roundButton(Pal p, IconData icon, VoidCallback? onTap,
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: primary ? p.pri : (enabled ? p.card2 : p.card),
+          color: primary ? p.cta : (enabled ? p.card2 : p.card),
           borderRadius: BorderRadius.circular(primary ? 22 : 14),
         ),
         child: Icon(icon,
             size: 20,
-            color: primary ? p.onPri : (enabled ? p.text : p.muted.withValues(alpha: 0.5))),
+            color: primary ? p.onCta : (enabled ? p.text : p.muted.withValues(alpha: 0.5))),
       ),
     ),
   );
@@ -156,12 +156,12 @@ Widget bigButton(Pal p, String label, VoidCallback onTap, {bool outline = false}
         height: 54,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: outline ? Colors.transparent : p.pri,
-          border: outline ? Border.all(color: p.pri, width: 2) : null,
-          borderRadius: BorderRadius.circular(16),
+          color: outline ? Colors.transparent : p.cta,
+          border: outline ? Border.all(color: p.text, width: 1.5) : null,
+          borderRadius: BorderRadius.circular(27),
         ),
         child: Text(label,
-            style: ts(p, 16, w: FontWeight.w700, color: outline ? p.pri : p.onPri)),
+            style: ts(p, 16, w: FontWeight.w700, color: outline ? p.text : p.onCta)),
       ),
     ),
   );
@@ -196,3 +196,202 @@ Widget switchTile(Pal p, String title, String sub, bool value, ValueChanged<bool
 }
 
 Widget divider(Pal p) => Container(height: 1, color: p.line);
+
+const Color mint = Color(0xFF38E0A8);
+
+/// Texto blanco para usar sobre la cabecera negra.
+TextStyle hs(double size, {FontWeight w = FontWeight.w500, Color color = Colors.white, double? ls}) =>
+    TextStyle(fontSize: size, fontWeight: w, color: color, letterSpacing: ls);
+
+/// Cabecera negra con esquinas redondeadas y un brillo verde.
+class CeroHeader extends StatelessWidget {
+  final Widget child;
+  final double bottom;
+  const CeroHeader({super.key, required this.child, this.bottom = 22});
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.of(context).padding.top;
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -80,
+            right: -60,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [Color(0x4738E0A8), Color(0x0038E0A8)]),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, top + 14, 20, bottom),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Botón redondo verde de la cabecera.
+Widget circleBtn(IconData icon, VoidCallback? onTap, {String? label}) {
+  return Semantics(
+    button: true,
+    label: label,
+    child: GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: const BoxDecoration(color: mint, shape: BoxShape.circle),
+        child: Icon(icon, size: 20, color: const Color(0xFF04261B)),
+      ),
+    ),
+  );
+}
+
+/// Botón redondo gris para "volver" sobre la cabecera.
+Widget backBtn(BuildContext context) {
+  return Semantics(
+    button: true,
+    label: 'Volver',
+    child: GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: const BoxDecoration(color: Color(0x24FFFFFF), shape: BoxShape.circle),
+        child: const Icon(Icons.chevron_left, size: 24, color: Colors.white),
+      ),
+    ),
+  );
+}
+
+/// Píldora para filtros sobre la cabecera negra.
+Widget headPill(String label, bool on, VoidCallback onTap) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: on ? mint : Colors.transparent,
+        border: on ? null : Border.all(color: const Color(0x47FFFFFF), width: 1.5),
+        borderRadius: BorderRadius.circular(19),
+      ),
+      child: Text(label,
+          style: hs(14, w: on ? FontWeight.w700 : FontWeight.w600, color: on ? const Color(0xFF04261B) : Colors.white)),
+    ),
+  );
+}
+
+/// Píldora con borde, sobre una tarjeta.
+Widget outlineChip(Pal p, String label, {Color? dot, bool on = false, VoidCallback? onTap, Color? border}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: on ? mint : Colors.transparent,
+        border: on ? null : Border.all(color: border ?? p.line, width: 1.5),
+        borderRadius: BorderRadius.circular(17),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (dot != null) ...[
+          Container(width: 9, height: 9, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+        ],
+        Text(label,
+            style: ts(p, 12,
+                w: FontWeight.w700, color: on ? const Color(0xFF04261B) : p.text)),
+      ]),
+    ),
+  );
+}
+
+/// Cuadro con icono de color.
+Widget iconTile(IconData icon, Color fg, Color bg, {double size = 42}) {
+  return Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+    child: Icon(icon, size: size * 0.5, color: fg),
+  );
+}
+
+/// Casilla de "pagado".
+Widget checkBox(Pal p, bool on, VoidCallback? onTap) {
+  return GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: SizedBox(
+      width: 40,
+      height: 40,
+      child: Center(
+        child: Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: on ? mint : Colors.transparent,
+            border: on ? null : Border.all(color: p.muted, width: 2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: on ? const Icon(Icons.check, size: 18, color: Color(0xFF04261B)) : null,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Botón principal grande, de ancho completo.
+Widget wideButton(Pal p, String label, VoidCallback onTap) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 54,
+      width: double.infinity,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: p.cta, borderRadius: BorderRadius.circular(27)),
+      child: Text(label, style: ts(p, 16, w: FontWeight.w700, color: p.onCta)),
+    ),
+  );
+}
+
+/// Abre una pantalla secundaria con botón de volver.
+Route<void> subPage(Widget child) {
+  return MaterialPageRoute<void>(
+    builder: (context) {
+      final p = Pal.of(context);
+      return Scaffold(
+        backgroundColor: p.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: roundButton(p, Icons.chevron_left, () => Navigator.of(context).pop(),
+                      label: 'Volver'),
+                ),
+              ),
+              Expanded(child: child),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}

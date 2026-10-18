@@ -1,10 +1,34 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'logic.dart';
 import 'models.dart';
 
 enum Strategy { avalancha, bolaDeNieve }
 
 class AppStore extends ChangeNotifier {
+  /// Si es verdadero, guarda cada cambio en el celular.
+  final bool persist;
+  AppStore({this.persist = false}) {
+    DateTime day(int n) => DateTime(now.year, now.month, n.clamp(1, now.day).toInt());
+    expenses.addAll([
+      Expense(id: 'e1', kind: ExpenseKind.hormiga, category: 'Delivery', note: 'Pedido', amount: 45, date: day(3), method: 'Yape'),
+      Expense(id: 'e2', kind: ExpenseKind.hormiga, category: 'Café', note: 'Café', amount: 32, date: day(5), method: 'Yape'),
+      Expense(id: 'e3', kind: ExpenseKind.hormiga, category: 'Snacks', note: 'Snacks', amount: 40, date: day(8), method: 'Efectivo'),
+      Expense(id: 'e4', kind: ExpenseKind.hormiga, category: 'Delivery', note: 'Pedido', amount: 43, date: day(10), method: 'Yape'),
+      Expense(id: 'e5', kind: ExpenseKind.hormiga, category: 'Café', note: 'Café', amount: 30, date: day(12), method: 'Yape'),
+      Expense(id: 'e6', kind: ExpenseKind.hormiga, category: 'Taxi', note: 'Taxi corto', amount: 24, date: day(14), method: 'Efectivo'),
+      Expense(id: 'v1', kind: ExpenseKind.variable, category: 'Comida', note: 'Mercado', amount: 640, date: day(4), method: 'Tarjeta'),
+      Expense(id: 'v2', kind: ExpenseKind.variable, category: 'Transporte', note: 'Pasajes', amount: 210, date: day(6), method: 'Efectivo'),
+      Expense(id: 'v3', kind: ExpenseKind.variable, category: 'Salud', note: 'Farmacia', amount: 85, date: day(9), method: 'Yape'),
+    ]);
+    incomes.addAll([
+      IncomeItem(id: 'i1', label: 'Aporte de mamá', amount: 500, date: day(14), tag: 'Familia'),
+      IncomeItem(id: 'i2', label: 'Trabajo extra', amount: 300, date: day(9), tag: 'Extra'),
+    ]);
+  }
+
+  String userName = 'Anthony';
   // Datos de ejemplo. Se reemplazan con los reales desde la app.
   final List<Debt> debts = [
     const Debt(id: 'p2', name: 'Prestamista 2', kind: DebtKind.prestamista, owner: Owner.pareja, balance: 15000, rateKind: RateKind.mensual, rate: 0.06, cuota: 1500, payDay: 22),
@@ -20,6 +44,23 @@ class AppStore extends ChangeNotifier {
     Person(name: 'Tu pareja', short: 'Pareja', payDay: 15, income: 6000),
     Person(name: 'Persona 3', short: 'Persona 3', payDay: 5, income: 6000),
   ];
+
+  final List<FixedBill> fixed = [
+    const FixedBill(id: 'f1', name: 'Alquiler', amount: 1800, day: 1),
+    const FixedBill(id: 'f2', name: 'Luz', amount: 160, day: 12),
+    const FixedBill(id: 'f3', name: 'Agua', amount: 70, day: 15),
+    const FixedBill(id: 'f4', name: 'Internet', amount: 110, day: 18),
+    const FixedBill(id: 'f5', name: 'Celulares', amount: 180, day: 20),
+  ];
+  final List<Expense> expenses = [];
+  final List<IncomeItem> incomes = [];
+
+  /// Fijos pagados, con la forma "id|año-mes".
+  final Set<String> fixedPaid = {};
+
+  /// Tope mensual de gastos hormiga y presupuesto de gastos variables.
+  double hormigaCap = 300;
+  final Map<String, double> varBudget = {'Comida': 1800, 'Transporte': 600, 'Salud': 300};
 
   final Set<String> paid = {};
   Strategy strategy = Strategy.avalancha;
@@ -53,6 +94,33 @@ class AppStore extends ChangeNotifier {
     out[out.length - 1] = amount - others;
     return out;
   }
+
+  String get _ym => '${now.year}-${now.month}';
+  bool isFixedPaid(FixedBill f) => fixedPaid.contains('${f.id}|$_ym');
+
+  bool _thisMonth(DateTime d) => d.year == now.year && d.month == now.month;
+
+  List<Expense> monthExpenses(ExpenseKind k) =>
+      expenses.where((e) => e.kind == k && _thisMonth(e.date)).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+  double get hormigaSpent => monthExpenses(ExpenseKind.hormiga).fold(0.0, (t, e) => t + e.amount);
+
+  double varSpent(String cat) => monthExpenses(ExpenseKind.variable)
+      .where((e) => e.category == cat)
+      .fold(0.0, (t, e) => t + e.amount);
+
+  double get fixedTotal => fixed.fold(0.0, (t, f) => t + f.amount);
+  double get fixedPaidSum =>
+      fixed.where(isFixedPaid).fold(0.0, (t, f) => t + f.amount);
+  double get varBudgetTotal => varBudget.values.fold(0.0, (t, v) => t + v);
+
+  double get extraIncomeMonth =>
+      incomes.where((i) => _thisMonth(i.date)).fold(0.0, (t, i) => t + i.amount);
+
+  /// Lo que queda libre tras cuotas, fijos, variables y el tope de hormiga.
+  double get freeMargin =>
+      totalIncome + extraIncomeMonth - totalCuotas - fixedTotal - varBudgetTotal - hormigaCap;
 
   List<String> get order => strategy == Strategy.avalancha
       ? avalancheOrder(debts)
@@ -102,6 +170,147 @@ class AppStore extends ChangeNotifier {
   void addDebt(Debt d) {
     debts.add(d);
     notifyListeners();
+  }
+
+  void toggleFixed(FixedBill f) {
+    final k = '${f.id}|$_ym';
+    if (!fixedPaid.remove(k)) fixedPaid.add(k);
+    notifyListeners();
+  }
+
+  void addFixed(FixedBill f) {
+    fixed.add(f);
+    notifyListeners();
+  }
+
+  void addExpense(Expense e) {
+    expenses.add(e);
+    notifyListeners();
+  }
+
+  void removeExpense(String id) {
+    expenses.removeWhere((e) => e.id == id);
+    notifyListeners();
+  }
+
+  void addIncome(IncomeItem i) {
+    incomes.add(i);
+    notifyListeners();
+  }
+
+  void removeIncome(String id) {
+    incomes.removeWhere((i) => i.id == id);
+    notifyListeners();
+  }
+
+  void setHormigaCap(double v) {
+    hormigaCap = v.clamp(0, 5000).toDouble();
+    notifyListeners();
+  }
+
+  // ---- Guardado en el celular ----
+  static const _key = 'cero_v1';
+
+  Map<String, dynamic> toJson() => {
+        'userName': userName,
+        'debts': [for (final d in debts) d.toJson()],
+        'people': [for (final x in people) x.toJson()],
+        'fixed': [for (final f in fixed) f.toJson()],
+        'expenses': [for (final e in expenses) e.toJson()],
+        'incomes': [for (final i in incomes) i.toJson()],
+        'fixedPaid': fixedPaid.toList(),
+        'paid': paid.toList(),
+        'hormigaCap': hormigaCap,
+        'varBudget': varBudget,
+        'strategy': strategy.index,
+        'extra': extra,
+        'goalMonths': goalMonths,
+        'themeMode': themeMode.index,
+        'alerts': alerts,
+      };
+
+  void fromJson(Map<String, dynamic> j) {
+    List<Map<String, dynamic>> list(String k) =>
+        [for (final x in (j[k] as List? ?? const [])) Map<String, dynamic>.from(x as Map)];
+    userName = (j['userName'] as String?) ?? userName;
+    final d = list('debts');
+    if (d.isNotEmpty) {
+      debts
+        ..clear()
+        ..addAll(d.map(Debt.fromJson));
+    }
+    final pe = list('people');
+    if (pe.isNotEmpty) {
+      people
+        ..clear()
+        ..addAll(pe.map(Person.fromJson));
+    }
+    if (j.containsKey('fixed')) {
+      fixed
+        ..clear()
+        ..addAll(list('fixed').map(FixedBill.fromJson));
+    }
+    if (j.containsKey('expenses')) {
+      expenses
+        ..clear()
+        ..addAll(list('expenses').map(Expense.fromJson));
+    }
+    if (j.containsKey('incomes')) {
+      incomes
+        ..clear()
+        ..addAll(list('incomes').map(IncomeItem.fromJson));
+    }
+    fixedPaid
+      ..clear()
+      ..addAll([for (final x in (j['fixedPaid'] as List? ?? const [])) x as String]);
+    paid
+      ..clear()
+      ..addAll([for (final x in (j['paid'] as List? ?? const [])) x as String]);
+    hormigaCap = (j['hormigaCap'] as num?)?.toDouble() ?? hormigaCap;
+    final vb = j['varBudget'];
+    if (vb is Map) {
+      varBudget
+        ..clear()
+        ..addAll({for (final e in vb.entries) e.key as String: (e.value as num).toDouble()});
+    }
+    strategy = Strategy.values[(j['strategy'] as int?) ?? strategy.index];
+    extra = (j['extra'] as num?)?.toDouble() ?? extra;
+    goalMonths = (j['goalMonths'] as int?) ?? goalMonths;
+    themeMode = ThemeMode.values[(j['themeMode'] as int?) ?? themeMode.index];
+    final al = j['alerts'];
+    if (al is List && al.length == alerts.length) {
+      for (var i = 0; i < alerts.length; i++) {
+        alerts[i] = al[i] as bool;
+      }
+    }
+  }
+
+  /// Lee lo guardado en el celular, si hay algo.
+  Future<void> load() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString(_key);
+      if (raw == null) return;
+      fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
+      super.notifyListeners();
+    } catch (_) {
+      // Si no se puede leer, se queda con los datos de ejemplo.
+    }
+  }
+
+  Future<void> _save() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setString(_key, jsonEncode(toJson()));
+    } catch (_) {
+      // Guardar es un extra: si falla, la app sigue funcionando.
+    }
+  }
+
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    if (persist) _save();
   }
 }
 

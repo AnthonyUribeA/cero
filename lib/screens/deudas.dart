@@ -8,6 +8,17 @@ import '../widgets.dart';
 import 'agregar.dart';
 import 'detalle.dart';
 
+const _debtColors = [
+  Color(0xFFFF6B6B),
+  Color(0xFFFF9F5A),
+  Color(0xFFF7C948),
+  Color(0xFF38E0A8),
+  Color(0xFF4FC3F7),
+  Color(0xFFB39DFF),
+  Color(0xFFF472B6),
+  Color(0xFF9AA29A),
+];
+
 class DeudasScreen extends StatefulWidget {
   const DeudasScreen({super.key});
 
@@ -35,120 +46,142 @@ class _DeudasScreenState extends State<DeudasScreen> {
   Widget build(BuildContext context) {
     final p = Pal.of(context);
     final s = StoreScope.of(context);
-    final list = s.debts.where(_match).toList()
-      ..sort((a, b) => b.annualRate.compareTo(a.annualRate));
+    final all = [...s.debts]..sort((a, b) => b.annualRate.compareTo(a.annualRate));
+    final colorOf = {
+      for (var i = 0; i < all.length; i++) all[i].id: _debtColors[i % _debtColors.length]
+    };
+    final list = all.where(_match).toList();
     const names = ['Todas', 'Prestamistas', 'Bancos', 'Cuotas'];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.only(bottom: 120),
       children: [
-        screenTitle(
-          p,
-          '${s.debts.length} deudas · ${money(s.totalDebt)}',
-          'Mis deudas',
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            roundButton(p, Icons.ios_share, () => exportExcel(context, s),
-                label: 'Exportar a Excel'),
-            const SizedBox(width: 8),
-            roundButton(p, Icons.add, () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const AgregarScreen()));
-            }, primary: true, label: 'Agregar deuda'),
+        CeroHeader(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text('Mis deudas', style: hs(30, w: FontWeight.w600, ls: -0.5))),
+              circleBtn(Icons.file_download_outlined, () => exportExcel(context, s),
+                  label: 'Exportar a Excel'),
+              const SizedBox(width: 10),
+              circleBtn(Icons.add, () {
+                Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => const AgregarScreen()));
+              }, label: 'Agregar deuda'),
+            ]),
+            const SizedBox(height: 2),
+            Text('${s.debts.length} deudas · la más cara primero',
+                style: hs(14, color: const Color(0xB3FFFFFF))),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (var i = 0; i < names.length; i++) ...[
+                  headPill(names[i], i == filter, () => setState(() => filter = i)),
+                  const SizedBox(width: 8),
+                ],
+              ]),
+            ),
           ]),
         ),
-        const SizedBox(height: 14),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var i = 0; i < names.length; i++) ...[
-                GestureDetector(
-                  onTap: () => setState(() => filter = i),
-                  child: Container(
-                    height: 40,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: i == filter ? p.text : p.card,
-                      borderRadius: BorderRadius.circular(20),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Column(children: [
+            panel(
+              p,
+              radius: 26,
+              pad: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Debes en total', style: ts(p, 14, w: FontWeight.w600, color: p.muted)),
+                const SizedBox(height: 2),
+                Text(money(s.totalDebt), style: ts(p, 38, w: FontWeight.w700, ls: -1, tab: true, h: 1.1)),
+                const SizedBox(height: 12),
+                splitBar(p, [for (final d in all) MapEntry(d.balance, colorOf[d.id]!)], height: 14),
+                const SizedBox(height: 14),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final d in all)
+                    outlineChip(
+                      p,
+                      '${d.name.replaceFirst('Préstamo ', '').replaceFirst('Tarjeta ', 'T. ')} ${s.totalDebt > 0 ? (d.balance / s.totalDebt * 100).round() : 0}%',
+                      dot: colorOf[d.id],
+                      border: colorOf[d.id],
                     ),
-                    child: Text(names[i],
-                        style: ts(p, 13,
-                            w: i == filter ? FontWeight.w700 : FontWeight.w600,
-                            color: i == filter ? p.bg : p.text)),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            panel(
+              p,
+              radius: 26,
+              pad: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+              child: Column(children: [
+                if (list.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text('No hay deudas en este grupo.', style: ts(p, 14, color: p.muted)),
                   ),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ],
-          ),
+                for (var i = 0; i < list.length; i++) ...[
+                  if (i > 0) divider(p),
+                  _row(context, p, list[i]),
+                ],
+              ]),
+            ),
+          ]),
         ),
-        const SizedBox(height: 12),
-        Text('Ordenadas por costo: la más cara primero',
-            style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
-        const SizedBox(height: 10),
-        for (final d in list) ...[
-          _card(context, p, s, d),
-          const SizedBox(height: 12),
-        ],
       ],
     );
   }
 
-  Widget _card(BuildContext context, Pal p, AppStore s, Debt d) {
-    final share = s.totalDebt > 0 ? d.balance / s.totalDebt : 0.0;
-    Color bg, fg;
+  Widget _row(BuildContext context, Pal p, Debt d) {
+    Color fg;
+    Color bg;
     switch (d.level) {
       case RateLevel.alta:
-        bg = p.warn;
         fg = p.red;
+        bg = p.warn;
         break;
       case RateLevel.media:
-        bg = p.card2;
-        fg = p.text;
+        fg = const Color(0xFFF7C948);
+        bg = const Color(0x29F7C948);
         break;
       case RateLevel.ninguna:
-        bg = p.okBg;
         fg = p.green;
+        bg = p.okBg;
         break;
     }
-    return panel(
-      p,
-      radius: 20,
-      pad: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => DetalleScreen(debtId: d.id))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Flexible(
-              child: Text(d.name,
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(p, 16, w: FontWeight.w700)),
-            ),
-            const SizedBox(width: 8),
-            ownerChip(p, d.owner),
-            const Spacer(),
-            Text(money(d.balance), style: ts(p, 17, w: FontWeight.w700, tab: true)),
-          ]),
-          const SizedBox(height: 8),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-              child: Text(d.rateLabel, style: ts(p, 12, w: FontWeight.w700, color: fg)),
-            ),
+          .push(MaterialPageRoute<void>(builder: (_) => DetalleScreen(debtId: d.id))),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(children: [
+          iconTile(Icons.percent, fg, bg, size: 44),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(d.name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(p, 15, w: FontWeight.w700)),
+              const SizedBox(height: 3),
+              Row(children: [
+                Flexible(
+                  child: Text(d.rateLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ts(p, 12, w: FontWeight.w600, color: fg)),
+                ),
+                const SizedBox(width: 6),
+                ownerChip(p, d.owner),
+              ]),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text(money(d.balance), style: ts(p, 17, w: FontWeight.w600, tab: true)),
+            const SizedBox(height: 2),
             Text('Cuota ${money(d.cuota)} · día ${d.payDay}',
-                style: ts(p, 12, color: p.muted)),
+                style: ts(p, 11, color: p.muted)),
           ]),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(child: progressBar(p, share, p.pri, height: 6)),
-            const SizedBox(width: 10),
-            Text('${(share * 100).round()}% del total · ${d.kind.label}',
-                style: ts(p, 11, w: FontWeight.w600, color: p.muted)),
-          ]),
-        ],
+        ]),
       ),
     );
   }

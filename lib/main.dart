@@ -3,17 +3,23 @@ import 'screens/arranque.dart';
 import 'store.dart';
 import 'theme.dart';
 
-void main() => runApp(const CeroApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final store = AppStore(persist: true);
+  await store.load();
+  runApp(CeroApp(store: store));
+}
 
 class CeroApp extends StatefulWidget {
-  const CeroApp({super.key});
+  final AppStore? store;
+  const CeroApp({super.key, this.store});
 
   @override
   State<CeroApp> createState() => _CeroAppState();
 }
 
 class _CeroAppState extends State<CeroApp> {
-  final AppStore store = AppStore();
+  late final AppStore store = widget.store ?? AppStore();
 
   @override
   Widget build(BuildContext context) {

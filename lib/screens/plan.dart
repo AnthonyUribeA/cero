@@ -32,7 +32,7 @@ class PlanScreen extends StatelessWidget {
     final isAv = s.strategy == Strategy.avalancha;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
       children: [
         Text('Plan para salir', style: ts(p, 32, w: FontWeight.w700, ls: -0.6)),
         const SizedBox(height: 14),

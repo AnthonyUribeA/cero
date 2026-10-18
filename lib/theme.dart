@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'models.dart';
 
-/// Paleta "Azul noche", en oscuro y en claro.
+/// Paleta de Cero: negro, verde menta y grises cálidos, en oscuro y en claro.
 class Pal {
   final bool isDark;
-  final Color bg, card, card2, line, text, muted, pri, onPri;
+  final Color bg, card, card2, line, text, muted, pri, onPri, cta, onCta;
   final Color red, redFill, green, greenFill, nav, tint, warn, okBg, track;
   final Map<Owner, Color> own;
   final Map<Owner, Color> ownBg;
@@ -19,6 +19,8 @@ class Pal {
     required this.muted,
     required this.pri,
     required this.onPri,
+    required this.cta,
+    required this.onCta,
     required this.red,
     required this.redFill,
     required this.green,
@@ -34,67 +36,71 @@ class Pal {
 
   static const dark = Pal(
     isDark: true,
-    bg: Color(0xFF0B1220),
-    card: Color(0xFF131D33),
-    card2: Color(0xFF1B2742),
-    line: Color(0xFF2A3858),
-    text: Color(0xFFEAF0FF),
-    muted: Color(0xFF9AA8C7),
-    pri: Color(0xFF4F8CFF),
-    onPri: Color(0xFF06101F),
+    bg: Color(0xFF0A0A0A),
+    card: Color(0xFF171917),
+    card2: Color(0xFF202420),
+    line: Color(0xFF2C312C),
+    text: Color(0xFFF4F6F4),
+    muted: Color(0xFF9AA29A),
+    pri: Color(0xFF38E0A8),
+    onPri: Color(0xFF04261B),
+    cta: Color(0xFF38E0A8),
+    onCta: Color(0xFF04261B),
     red: Color(0xFFFF7A7A),
     redFill: Color(0xFFFF7A7A),
-    green: Color(0xFF3DDC97),
-    greenFill: Color(0xFF3DDC97),
-    nav: Color(0xFF0F182B),
-    tint: Color(0x2E4F8CFF),
+    green: Color(0xFF38E0A8),
+    greenFill: Color(0xFF38E0A8),
+    nav: Color(0xFF171917),
+    tint: Color(0x2938E0A8),
     warn: Color(0x1FFF7A7A),
-    okBg: Color(0x243DDC97),
-    track: Color(0xFF2A3858),
+    okBg: Color(0x2438E0A8),
+    track: Color(0xFF2C312C),
     own: {
-      Owner.tu: Color(0xFF4F8CFF),
-      Owner.pareja: Color(0xFFB197FC),
+      Owner.tu: Color(0xFF38E0A8),
+      Owner.pareja: Color(0xFFB39DFF),
       Owner.persona3: Color(0xFFF472B6),
-      Owner.varios: Color(0xFF9AA8C7),
+      Owner.varios: Color(0xFF9AA29A),
     },
     ownBg: {
-      Owner.tu: Color(0x2E4F8CFF),
-      Owner.pareja: Color(0x2EB197FC),
+      Owner.tu: Color(0x2938E0A8),
+      Owner.pareja: Color(0x2EB39DFF),
       Owner.persona3: Color(0x2EF472B6),
-      Owner.varios: Color(0x299AA8C7),
+      Owner.varios: Color(0x299AA29A),
     },
   );
 
   static const light = Pal(
     isDark: false,
-    bg: Color(0xFFF2F5FB),
+    bg: Color(0xFFECEEEB),
     card: Color(0xFFFFFFFF),
-    card2: Color(0xFFE6ECF8),
-    line: Color(0xFFD5DEF0),
-    text: Color(0xFF0F1830),
-    muted: Color(0xFF55627F),
-    pri: Color(0xFF2A66E0),
+    card2: Color(0xFFF3F5F2),
+    line: Color(0xFFDADFD8),
+    text: Color(0xFF0A0A0A),
+    muted: Color(0xFF5F6760),
+    pri: Color(0xFF0B8A64),
     onPri: Color(0xFFFFFFFF),
-    red: Color(0xFFBF3030),
+    cta: Color(0xFF0A0A0A),
+    onCta: Color(0xFFFFFFFF),
+    red: Color(0xFFC62828),
     redFill: Color(0xFFEF5B5B),
-    green: Color(0xFF0B7A52),
-    greenFill: Color(0xFF22B573),
+    green: Color(0xFF0B8A64),
+    greenFill: Color(0xFF38E0A8),
     nav: Color(0xFFFFFFFF),
-    tint: Color(0x1F2A66E0),
-    warn: Color(0x14BF3030),
-    okBg: Color(0x1A0B7A52),
-    track: Color(0xFFD5DEF0),
+    tint: Color(0x2938E0A8),
+    warn: Color(0x14C62828),
+    okBg: Color(0x1A0B8A64),
+    track: Color(0xFFDADFD8),
     own: {
-      Owner.tu: Color(0xFF2A66E0),
+      Owner.tu: Color(0xFF0B8A64),
       Owner.pareja: Color(0xFF7C5CE0),
       Owner.persona3: Color(0xFFC0328A),
-      Owner.varios: Color(0xFF55627F),
+      Owner.varios: Color(0xFF5F6760),
     },
     ownBg: {
-      Owner.tu: Color(0x1F2A66E0),
+      Owner.tu: Color(0x1F0B8A64),
       Owner.pareja: Color(0x1F7C5CE0),
       Owner.persona3: Color(0x1FC0328A),
-      Owner.varios: Color(0x1F55627F),
+      Owner.varios: Color(0x1F5F6760),
     },
   );
 
