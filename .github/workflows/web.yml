@@ -1,0 +1,51 @@
+# Publica la versión web en GitHub Pages: https://anthonyuribea.github.io/cero/
+name: Web
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Carpeta web
+        run: flutter create --platforms=web --org com.auribe --project-name cero .
+      - name: Logo y datos de la app
+        run: |
+          cp branding/icon-192.png web/icons/Icon-192.png
+          cp branding/icon-512.png web/icons/Icon-512.png
+          cp branding/icon-maskable-192.png web/icons/Icon-maskable-192.png
+          cp branding/icon-maskable-512.png web/icons/Icon-maskable-512.png
+          cp branding/favicon.png web/favicon.png
+          cp branding/apple-touch-icon.png web/icons/apple-touch-icon.png
+          sed -i 's#<title>.*</title>#<title>Cero</title>#' web/index.html
+          sed -i 's#<link rel="apple-touch-icon" href="icons/Icon-192.png">#<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">#' web/index.html
+          sed -i 's#<meta name="apple-mobile-web-app-title" content=".*">#<meta name="apple-mobile-web-app-title" content="Cero">#' web/index.html
+          sed -i 's#<meta name="theme-color"[^>]*>##' web/index.html
+          sed -i 's#<head>#<head>\n  <meta name="theme-color" content="\#0B1220">#' web/index.html
+          sed -i 's#"background_color": *"[^"]*"#"background_color": "\#0B1220"#; s#"theme_color": *"[^"]*"#"theme_color": "\#0B1220"#; s#"name": *"cero"#"name": "Cero"#; s#"short_name": *"cero"#"short_name": "Cero"#' web/manifest.json
+      - run: flutter pub get
+      - run: flutter build web --release --base-href /cero/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4

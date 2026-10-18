@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -152,6 +153,11 @@ List<int>? buildWorkbook(AppStore s) {
 /// Guarda el Excel y abre el menú de compartir del teléfono.
 Future<void> exportExcel(BuildContext context, AppStore s) async {
   final messenger = ScaffoldMessenger.of(context);
+  if (kIsWeb) {
+    messenger.showSnackBar(const SnackBar(
+        content: Text('El Excel se exporta desde la app del teléfono. En la versión web todavía no.')));
+    return;
+  }
   try {
     final bytes = buildWorkbook(s);
     if (bytes == null) {
