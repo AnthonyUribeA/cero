@@ -1,6 +1,15 @@
 import 'dart:math' as math;
 import 'models.dart';
 
+/// Una fila del calendario mes a mes.
+class MonthRow {
+  final int month;
+  final double payment;
+  final double interest;
+  final double remaining;
+  const MonthRow(this.month, this.payment, this.interest, this.remaining);
+}
+
 class SimResult {
   final int months;
   final int interest;
@@ -11,7 +20,11 @@ class SimResult {
   /// Intereses totales que se pagarán en cada deuda.
   final Map<String, int> interestBy;
 
-  const SimResult(this.months, this.interest, this.close, this.interestBy);
+  /// Calendario: pago, intereses y saldo que queda al cerrar cada mes.
+  final List<MonthRow> rows;
+
+  const SimResult(this.months, this.interest, this.close, this.interestBy,
+      [this.rows = const []]);
 }
 
 class _Live {
@@ -37,15 +50,19 @@ SimResult simulate(
   double interest = 0;
   final close = <String, int>{};
   final by = <String, double>{};
+  final rows = <MonthRow>[];
 
   while (live.any((l) => l.bal > 0.5) && months < 600) {
     months += 1;
     double spent = 0;
+    final before = live.fold<double>(0, (t, l) => t + l.bal);
+    double monthInterest = 0;
     for (final l in live) {
       if (l.bal > 0) {
         final i = l.bal * l.d.monthlyRate;
         l.bal += i;
         interest += i;
+        monthInterest += i;
         by[l.d.id] = (by[l.d.id] ?? 0) + i;
         final pay = math.min(l.d.cuota, l.bal);
         l.bal -= pay;
@@ -68,12 +85,15 @@ SimResult simulate(
         close[l.d.id] = months;
       }
     }
+    final after = live.fold<double>(0, (t, l) => t + (l.bal > 0.5 ? l.bal : 0));
+    rows.add(MonthRow(months, before + monthInterest - after, monthInterest, after));
   }
   return SimResult(
     months,
     interest.round(),
     close,
     by.map((k, v) => MapEntry(k, v.round())),
+    rows,
   );
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../export.dart';
 import '../format.dart';
 import '../models.dart';
 import '../store.dart';
@@ -45,9 +46,15 @@ class _DeudasScreenState extends State<DeudasScreen> {
           p,
           '${s.debts.length} deudas · ${money(s.totalDebt)}',
           'Mis deudas',
-          trailing: roundButton(p, Icons.add, () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AgregarScreen()));
-          }, primary: true, label: 'Agregar deuda'),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            roundButton(p, Icons.ios_share, () => exportExcel(context, s),
+                label: 'Exportar a Excel'),
+            const SizedBox(width: 8),
+            roundButton(p, Icons.add, () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const AgregarScreen()));
+            }, primary: true, label: 'Agregar deuda'),
+          ]),
         ),
         const SizedBox(height: 14),
         SingleChildScrollView(

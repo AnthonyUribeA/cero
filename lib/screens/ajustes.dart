@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../export.dart';
 import '../store.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -56,6 +57,26 @@ class AjustesScreen extends StatelessWidget {
             group('EN FAMILIA', [
               sw(4, 'Avisar a los tres', 'Las deudas de “Varios” llegan a todos'),
               sw(5, 'Avisar cuando otro marca un pago', 'Para que todos vean el avance'),
+            ]),
+            group('DATOS', [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => exportExcel(context, s),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Exportar a Excel', style: ts(p, 15, w: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text('Todas las deudas, los aportes y el calendario del plan',
+                            style: ts(p, 12, color: p.muted, h: 1.4)),
+                      ]),
+                    ),
+                    Icon(Icons.ios_share, color: p.pri, size: 22),
+                  ]),
+                ),
+              ),
             ]),
             group('APARIENCIA', [
               Padding(
