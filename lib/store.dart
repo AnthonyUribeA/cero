@@ -139,6 +139,33 @@ class AppStore extends ChangeNotifier {
   double get extraIncomeMonth =>
       incomes.where((i) => _thisMonth(i.date)).fold(0.0, (t, i) => t + i.amount);
 
+  // ---- Resumen del mes ----
+  double get incomeMonth => totalIncome + extraIncomeMonth;
+  double get cuotasPaid => debts.where(isPaid).fold(0.0, (t, d) => t + d.paymentFor(ymNow));
+  double get varSpentTotal => monthExpenses(ExpenseKind.variable).fold(0.0, (t, e) => t + e.amount);
+
+  /// Lo que ya salió este mes: cuotas y fijos pagados, variables y hormiga gastados.
+  double get spentSoFar => cuotasPaid + fixedPaidSum + varSpentTotal + hormigaSpent;
+
+  /// Cuotas y fijos que todavía faltan pagar este mes.
+  double get pendingDue => (totalCuotas - cuotasPaid) + (fixedTotal - fixedPaidSum);
+
+  /// Lo que tienes hoy después de lo que ya pagaste y gastaste.
+  double get availableNow => incomeMonth - spentSoFar;
+
+  /// Lo que te quedaría al cerrar el mes si pagas todo y gastas lo presupuestado.
+  double get endOfMonth {
+    final varLeft = varBudgetTotal - varSpentTotal;
+    final hormLeft = hormigaCap - hormigaSpent;
+    return availableNow - pendingDue - (varLeft > 0 ? varLeft : 0) - (hormLeft > 0 ? hormLeft : 0);
+  }
+
+  /// Cuánto baja la deuda este mes (capital de las cuotas del mes).
+  double get capitalThisMonth => current.fold(0.0, (t, d) {
+        final r = d.schedule;
+        return t + (r.isEmpty ? 0 : r.first.capital + r.first.extra);
+      });
+
   /// Lo que queda libre tras cuotas, fijos, variables y el tope de hormiga.
   double get freeMargin =>
       totalIncome + extraIncomeMonth - totalCuotas - fixedTotal - varBudgetTotal - hormigaCap;

@@ -31,9 +31,6 @@ class HoyScreen extends StatelessWidget {
     final s = StoreScope.of(context);
     final now = s.now;
     final plan = s.plan;
-    final cuotas = s.totalCuotas;
-    final paidSum = s.debts.where(s.isPaid).fold(0.0, (t, d) => t + d.paymentFor(s.ymNow));
-    final pct = cuotas > 0 ? paidSum / cuotas : 0.0;
 
     final ups = <_Upcoming>[
       for (final d in s.debts)
@@ -99,38 +96,7 @@ class HoyScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Column(children: [
-            panel(
-              p,
-              radius: 26,
-              pad: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Pagado este mes', style: ts(p, 14, w: FontWeight.w600, color: p.muted)),
-                  Text('${monthsShort[now.month - 1]} ${now.year}', style: ts(p, 12, w: FontWeight.w700)),
-                ]),
-                const SizedBox(height: 6),
-                Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text(money(paidSum), style: ts(p, 38, w: FontWeight.w700, ls: -1, tab: true, h: 1.1)),
-                  const SizedBox(width: 10),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text('${(pct * 100).round()}%',
-                        style: ts(p, 13, w: FontWeight.w700, color: p.green)),
-                  ),
-                ]),
-                const SizedBox(height: 12),
-                progressBar(p, pct, p.greenFill, height: 12),
-                const SizedBox(height: 8),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('de las cuotas del mes', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
-                  Text(money(cuotas), style: ts(p, 12, w: FontWeight.w600, color: p.muted, tab: true)),
-                ]),
-                const SizedBox(height: 14),
-                wideButton(p, 'Ver pagos', () {
-                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen()));
-                }),
-              ]),
-            ),
+            _dashboard(context, p, s),
             const SizedBox(height: 16),
             Row(children: [
               tile(Ic.target, 'Plan', () => onTab(3)),
@@ -210,6 +176,124 @@ class HoyScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _dashboard(BuildContext context, Pal p, AppStore s) {
+    final income = s.incomeMonth;
+    final avail = s.availableNow;
+    final end = s.endOfMonth;
+    final cuotas = s.totalCuotas;
+    final cPaid = s.cuotasPaid;
+    final fixed = s.fixedTotal;
+    final fPaid = s.fixedPaidSum;
+    final gastado = s.varSpentTotal + s.hormigaSpent;
+    final pending = s.pendingDue;
+    final libre = avail - pending;
+    const amber = Color(0xFFF7C948);
+
+    Widget legend(Color c, String l, double v) => Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(children: [
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(3))),
+            const SizedBox(width: 8),
+            Expanded(child: Text(l, style: ts(p, 13, color: p.muted))),
+            Text(money(v), style: ts(p, 13, w: FontWeight.w700, tab: true)),
+          ]),
+        );
+
+    Widget kpi(IconData ic, Color c, String label, String value, String sub, {double? frac, VoidCallback? onTap}) =>
+        Expanded(
+          child: panel(
+            p,
+            radius: 22,
+            pad: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            onTap: onTap,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                iconTile(ic, c, c.withValues(alpha: 0.16), size: 34),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(label,
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(p, 12, w: FontWeight.w700, color: p.muted)),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(value, style: ts(p, 22, w: FontWeight.w700, ls: -0.5, tab: true)),
+              ),
+              const SizedBox(height: 2),
+              Text(sub, maxLines: 2, style: ts(p, 11, w: FontWeight.w600, color: p.muted, h: 1.3)),
+              if (frac != null) ...[
+                const SizedBox(height: 8),
+                progressBar(p, frac, frac >= 1 ? p.greenFill : c, height: 6),
+              ],
+            ]),
+          ),
+        );
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Resumen de ${monthsLong[s.now.month - 1]}', style: ts(p, 21, w: FontWeight.w600)),
+      const SizedBox(height: 10),
+      panel(
+        p,
+        radius: 26,
+        pad: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Disponible hoy', style: ts(p, 14, w: FontWeight.w600, color: p.muted)),
+          const SizedBox(height: 2),
+          Text(money(avail),
+              style: ts(p, 38, w: FontWeight.w700, ls: -1, tab: true, h: 1.1, color: avail < 0 ? p.red : p.text)),
+          const SizedBox(height: 4),
+          Text.rich(TextSpan(style: ts(p, 13, color: p.muted), children: [
+            const TextSpan(text: 'Al cerrar el mes te quedarían '),
+            TextSpan(
+                text: money(end),
+                style: ts(p, 13, w: FontWeight.w700, color: end < 0 ? p.red : p.green)),
+            const TextSpan(text: ' si pagas todo y gastas lo presupuestado.'),
+          ])),
+          const SizedBox(height: 14),
+          splitBar(p, [
+            MapEntry(cPaid + fPaid, p.greenFill),
+            MapEntry(gastado, kHormiga),
+            MapEntry(pending, amber.withValues(alpha: 0.45)),
+            MapEntry(libre > 0 ? libre : 0.0, p.track),
+          ], height: 14),
+          legend(p.greenFill, 'Ya pagaste (cuotas y fijos)', cPaid + fPaid),
+          legend(kHormiga, 'Gastado (variables y hormiga)', gastado),
+          legend(amber.withValues(alpha: 0.45), 'Falta pagar este mes', pending),
+          legend(p.track, 'Libre después de pagar', libre),
+          const SizedBox(height: 10),
+          divider(p),
+          const SizedBox(height: 10),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('Ingresos del mes', style: ts(p, 13, w: FontWeight.w700)),
+            Text(money(income), style: ts(p, 13, w: FontWeight.w700, tab: true, color: p.green)),
+          ]),
+        ]),
+      ),
+      const SizedBox(height: 12),
+      Row(children: [
+        kpi(Ic.debts, p.red, 'Deuda total', money(s.totalDebt),
+            'Este mes baja ${money(s.capitalThisMonth)}', onTap: () => onTab(1)),
+        const SizedBox(width: 12),
+        kpi(Ic.percent, const Color(0xFFFF9F5A), 'Cuotas del mes', money(cuotas),
+            cuotas - cPaid <= 0.5 ? 'Todas pagadas' : 'Pagaste ${money(cPaid)} · faltan ${money(cuotas - cPaid)}',
+            frac: cuotas > 0 ? cPaid / cuotas : 1,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen()))),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        kpi(Ic.receipt, kFijo, 'Gastos fijos', money(fixed),
+            fixed - fPaid <= 0.5 ? 'Todos pagados' : 'Pagaste ${money(fPaid)} · faltan ${money(fixed - fPaid)}',
+            frac: fixed > 0 ? fPaid / fixed : 1, onTap: () => onTab(2)),
+        const SizedBox(width: 12),
+        kpi(Ic.snack, kHormiga, 'Hormiga y variables', money(gastado),
+            'Hormiga ${money(s.hormigaSpent)} de ${money(s.hormigaCap)}',
+            frac: s.hormigaCap > 0 ? s.hormigaSpent / s.hormigaCap : 0, onTap: () => onTab(2)),
+      ]),
+    ]);
   }
 
   static double _pay(Debt d, DateTime due) => d.paymentFor(due.year * 12 + due.month - 1);

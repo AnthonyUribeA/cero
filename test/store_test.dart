@@ -82,4 +82,16 @@ void main() {
     final next = d.atMonth(s.ymNow + 1);
     expect(next.balance, closeTo(d.schedule.first.remaining, 0.01));
   });
+
+  test('resumen: disponible hoy y al cierre del mes cuadran', () {
+    final s = AppStore();
+    // Sin nada pagado: disponible = ingresos - gastos ya anotados.
+    expect(s.availableNow, closeTo(s.incomeMonth - s.varSpentTotal - s.hormigaSpent, 0.01));
+    // Si no te pasas del presupuesto, al cierre te queda el margen libre.
+    expect(s.endOfMonth, closeTo(s.freeMargin, 0.01));
+    final antes = s.availableNow;
+    s.togglePaid(s.debts.first.id);
+    expect(s.availableNow, closeTo(antes - s.debts.first.paymentFor(s.ymNow), 0.01));
+    expect(s.endOfMonth, closeTo(s.freeMargin, 0.01));
+  });
 }
