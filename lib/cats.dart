@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'icons.dart';
 
 const Color kFijo = Color(0xFF4FC3F7);
 const Color kVar = Color(0xFFB39DFF);
@@ -7,30 +8,30 @@ const Color kHormiga = Color(0xFFF7C948);
 IconData catIcon(String c) {
   switch (c) {
     case 'Delivery':
-      return Icons.delivery_dining;
+      return Ic.delivery;
     case 'Café':
-      return Icons.local_cafe_outlined;
+      return Ic.coffee;
     case 'Snacks':
-      return Icons.cookie_outlined;
+      return Ic.snack;
     case 'Taxi':
-      return Icons.local_taxi_outlined;
+      return Ic.taxi;
     case 'Comida':
-      return Icons.restaurant_outlined;
+      return Ic.food;
     case 'Transporte':
-      return Icons.directions_bus_outlined;
+      return Ic.bus;
     case 'Salud':
-      return Icons.medical_services_outlined;
+      return Ic.health;
     default:
-      return Icons.more_horiz;
+      return Ic.other;
   }
 }
 
 IconData fixedIcon(String name) {
   final n = name.toLowerCase();
-  if (n.contains('alquiler')) return Icons.home_outlined;
-  if (n.contains('luz')) return Icons.bolt;
-  if (n.contains('agua')) return Icons.water_drop_outlined;
-  if (n.contains('internet')) return Icons.wifi;
-  if (n.contains('celular')) return Icons.smartphone;
-  return Icons.receipt_long_outlined;
+  if (n.contains('alquiler')) return Ic.house;
+  if (n.contains('luz')) return Ic.bolt;
+  if (n.contains('agua')) return Ic.drop;
+  if (n.contains('internet')) return Ic.wifi;
+  if (n.contains('celular')) return Ic.phone;
+  return Ic.receipt;
 }

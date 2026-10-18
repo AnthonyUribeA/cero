@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../cats.dart';
 import '../export.dart';
 import '../format.dart';
@@ -31,14 +32,14 @@ class HoyScreen extends StatelessWidget {
     final now = s.now;
     final plan = s.plan;
     final cuotas = s.totalCuotas;
-    final paidSum = s.debts.where((d) => s.paid.contains(d.id)).fold(0.0, (t, d) => t + d.paymentFor(s.ymNow));
+    final paidSum = s.debts.where(s.isPaid).fold(0.0, (t, d) => t + d.paymentFor(s.ymNow));
     final pct = cuotas > 0 ? paidSum / cuotas : 0.0;
 
     final ups = <_Upcoming>[
       for (final d in s.debts)
-        if (!s.paid.contains(d.id) && _pay(d, nextDue(d.payDay, now)) > 0.005)
+        if (!s.isPaid(d) && _pay(d, nextDue(d.payDay, now)) > 0.005)
           _Upcoming(d.name, '${d.owner.label} · ${d.rateLabel}', nextDue(d.payDay, now),
-              _pay(d, nextDue(d.payDay, now)), Icons.percent, p.red),
+              _pay(d, nextDue(d.payDay, now)), Ic.percent, p.red),
       for (final f in s.fixed)
         if (!s.isFixedPaid(f))
           _Upcoming(f.name, 'Gasto fijo', nextDue(f.day, now), f.amount, fixedIcon(f.name), kFijo),
@@ -77,11 +78,11 @@ class HoyScreen extends StatelessWidget {
               const SizedBox(width: 8),
               Text('Cero', style: hs(26, w: FontWeight.w600, ls: -0.5)),
               const Spacer(),
-              circleBtn(Icons.notifications_none, () {
+              circleBtn(Ic.bell, () {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AjustesScreen()));
               }, label: 'Alertas'),
               const SizedBox(width: 10),
-              circleBtn(Icons.settings_outlined, () {
+              circleBtn(Ic.gear, () {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AjustesScreen()));
               }, label: 'Ajustes'),
             ]),
@@ -132,12 +133,12 @@ class HoyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Row(children: [
-              tile(Icons.track_changes, 'Plan', () => onTab(3)),
-              tile(Icons.account_balance_wallet_outlined, 'Gastos', () => onTab(2)),
-              tile(Icons.check_box_outlined, 'Pagos', () {
+              tile(Ic.target, 'Plan', () => onTab(3)),
+              tile(Ic.wallet, 'Gastos', () => onTab(2)),
+              tile(Ic.checks, 'Pagos', () {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen()));
               }),
-              tile(Icons.file_download_outlined, 'Excel', () => exportExcel(context, s)),
+              tile(Ic.download, 'Excel', () => exportExcel(context, s)),
             ]),
             const SizedBox(height: 16),
             Container(

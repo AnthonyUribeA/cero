@@ -103,6 +103,32 @@ class Debt {
         planStart: planStart ?? this.planStart,
       );
 
+  /// Cómo queda la deuda al empezar el mes [ym], suponiendo pagados los meses
+  /// anteriores del cronograma.
+  Debt atMonth(int ym) {
+    if (planStart == null || ym <= planStart!) return this;
+    final off = ym - planStart!;
+    final rows = schedule;
+    final bal = off <= rows.length ? rows[off - 1].remaining : 0.0;
+    return Debt(
+      id: id,
+      name: name,
+      kind: kind,
+      owner: owner,
+      balance: bal,
+      rateKind: rateKind,
+      rate: rate,
+      cuota: cuota,
+      payDay: payDay,
+      principal: principal,
+      termMonths: termMonths,
+      paidCount: termMonths == null ? paidCount : (paidCount ?? 0) + off,
+      method: method,
+      extras: {for (final e in extras.entries) if (e.key >= off) e.key - off: e.value},
+      planStart: ym,
+    );
+  }
+
   /// Cuotas que faltan según el plazo, si se conoce.
   int? get remainingTerm => termMonths == null ? null : termMonths! - (paidCount ?? 0);
 

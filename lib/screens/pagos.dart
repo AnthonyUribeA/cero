@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../cats.dart';
 import '../format.dart';
 import '../models.dart';
@@ -47,7 +48,7 @@ class _PagosScreenState extends State<PagosScreen> {
   bool _isCurrentMonth(AppStore s, DateTime d) => d.year == s.now.year && d.month == s.now.month;
 
   bool _paid(AppStore s, _Ev e) =>
-      e.isDebt ? s.paid.contains(e.debt!.id) : s.isFixedPaid(e.bill!);
+      e.isDebt ? s.isPaid(e.debt!) : s.isFixedPaid(e.bill!);
 
   void _toggle(AppStore s, _Ev e) {
     if (e.isDebt) {
@@ -205,12 +206,12 @@ class _PagosScreenState extends State<PagosScreen> {
           ),
         );
     return Row(children: [
-      arrow(Icons.chevron_left, -1),
+      arrow(Ic.back, -1),
       Expanded(
         child: Text('${_capi(monthsLong[m.month - 1])} ${m.year}',
             textAlign: TextAlign.center, style: hs(20, w: FontWeight.w600)),
       ),
-      arrow(Icons.chevron_right, 1),
+      arrow(Ic.next, 1),
     ]);
   }
 
@@ -359,7 +360,7 @@ class _PagosScreenState extends State<PagosScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(children: [
-                iconTile(ev[i].isDebt ? Icons.percent : fixedIcon(ev[i].name),
+                iconTile(ev[i].isDebt ? Ic.percent : fixedIcon(ev[i].name),
                     ev[i].isDebt ? p.red : kFijo,
                     (ev[i].isDebt ? p.redFill : kFijo).withValues(alpha: 0.16),
                     size: 42),

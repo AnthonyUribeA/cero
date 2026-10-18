@@ -65,4 +65,21 @@ void main() {
     expect(b.debtById(d.id).extras[0], 1000);
     expect(b.debtById(d.id).planStart, start);
   });
+
+  test('pagar la cuota del mes baja el saldo y queda marcada solo este mes', () {
+    final s = AppStore();
+    final d = s.debts.first;
+    final antes = s.balanceOf(d);
+    s.togglePaid(d.id);
+    expect(s.isPaid(d), isTrue);
+    expect(s.balanceOf(d), lessThan(antes));
+    expect(s.paid.single, '${d.id}|${s.ymNow}');
+  });
+
+  test('al mes siguiente la deuda empieza con el saldo que quedó', () {
+    final s = AppStore();
+    final d = s.debts.first;
+    final next = d.atMonth(s.ymNow + 1);
+    expect(next.balance, closeTo(d.schedule.first.remaining, 0.01));
+  });
 }

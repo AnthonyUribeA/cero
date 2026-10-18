@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'deudas.dart';
@@ -17,12 +18,12 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int index = 0;
 
-  static const _tabs = <(String, IconData)>[
-    ('Hoy', Icons.home_outlined),
-    ('Deudas', Icons.format_list_bulleted),
-    ('Gastos', Icons.account_balance_wallet_outlined),
-    ('Plan', Icons.track_changes),
-    ('Más', Icons.more_horiz),
+  static const _tabs = <(String, IconData, IconData)>[
+    ('Hoy', Ic.home, Ic.homeOn),
+    ('Deudas', Ic.debts, Ic.debtsOn),
+    ('Gastos', Ic.wallet, Ic.walletOn),
+    ('Plan', Ic.target, Ic.targetOn),
+    ('Más', Ic.more, Ic.moreOn),
   ];
 
   @override
@@ -76,8 +77,8 @@ class _RootShellState extends State<RootShell> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(_tabs[i].$2,
-                                  size: 22, color: i == index ? p.pri : p.muted),
+                              Icon(i == index ? _tabs[i].$3 : _tabs[i].$2,
+                                  size: 23, color: i == index ? p.pri : p.muted),
                               const SizedBox(height: 2),
                               Text(_tabs[i].$1,
                                   style: ts(p, 11,

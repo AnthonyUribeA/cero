@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../export.dart';
 import '../format.dart';
 import '../models.dart';
@@ -37,7 +38,7 @@ class MasScreen extends StatelessWidget {
                     Text(sub, style: ts(p, 12, color: p.muted)),
                   ]),
                 ),
-                Icon(Icons.chevron_right, size: 20, color: p.muted),
+                Icon(Ic.next, size: 20, color: p.muted),
               ]),
             ),
           ]),
@@ -50,7 +51,7 @@ class MasScreen extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text('Más', style: hs(30, w: FontWeight.w600, ls: -0.5))),
-              circleBtn(Icons.settings_outlined, () {
+              circleBtn(Ic.gear, () {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AjustesScreen()));
               }, label: 'Ajustes'),
             ]),
@@ -92,7 +93,7 @@ class MasScreen extends StatelessWidget {
                         onTap: () => s.removeIncome(i.id),
                         behavior: HitTestBehavior.opaque,
                         child: SizedBox(
-                            width: 36, height: 30, child: Icon(Icons.close, size: 16, color: p.muted)),
+                            width: 36, height: 30, child: Icon(Ic.close, size: 16, color: p.muted)),
                       ),
                     ]),
                   ),
@@ -107,10 +108,10 @@ class MasScreen extends StatelessWidget {
               radius: 26,
               pad: const EdgeInsets.fromLTRB(18, 0, 18, 0),
               child: Column(children: [
-                row(Icons.notifications_none, 'Alertas y ajustes', 'Avisos de pago y datos de la app', () {
+                row(Ic.bell, 'Alertas y ajustes', 'Avisos de pago y datos de la app', () {
                   Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AjustesScreen()));
                 }, top: false),
-                row(Icons.file_download_outlined, 'Exportar a Excel', 'Deudas, aportes y calendario',
+                row(Ic.download, 'Exportar a Excel', 'Deudas, aportes y calendario',
                     () => exportExcel(context, s)),
                 Padding(
                   padding: const EdgeInsets.only(top: 6, bottom: 16),

@@ -21,7 +21,7 @@ class PlanScreen extends StatelessWidget {
     final need = s.needForGoal;
     final margin = s.freeMargin;
     final fits = need <= margin;
-    final withMargin = margin > 0 ? simulate(s.debts, order, margin, roll: true, startYm: s.ymNow) : plan;
+    final withMargin = margin > 0 ? simulate(s.current, order, margin, roll: true, startYm: s.ymNow) : plan;
     final isAv = s.strategy == Strategy.avalancha;
 
     Widget stat(String v, String l) => Expanded(

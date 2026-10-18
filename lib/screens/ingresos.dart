@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../format.dart';
 import '../models.dart';
 import '../store.dart';
@@ -61,7 +62,7 @@ class IngresosScreen extends StatelessWidget {
           p,
           pad: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Icons.groups_outlined, color: p.pri, size: 22),
+            Icon(Ic.people, color: p.pri, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

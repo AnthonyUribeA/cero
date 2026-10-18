@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../cats.dart';
 import '../format.dart';
 import '../models.dart';
@@ -50,7 +51,7 @@ class _GastosScreenState extends State<GastosScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text('Gastos', style: hs(30, w: FontWeight.w600, ls: -0.5))),
-              circleBtn(Icons.add, () => _add(tab == 1 ? 0 : (tab == 2 ? 1 : 2)),
+              circleBtn(Ic.plus, () => _add(tab == 1 ? 0 : (tab == 2 ? 1 : 2)),
                   label: 'Agregar gasto'),
             ]),
             const SizedBox(height: 2),
@@ -320,7 +321,7 @@ class _GastosScreenState extends State<GastosScreen> {
                 child: SizedBox(
                   width: 36,
                   height: 36,
-                  child: Icon(Icons.close, size: 16, color: p.muted),
+                  child: Icon(Ic.close, size: 16, color: p.muted),
                 ),
               ),
             ]),

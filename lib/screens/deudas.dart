@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../export.dart';
 import '../format.dart';
 import '../models.dart';
@@ -60,10 +61,10 @@ class _DeudasScreenState extends State<DeudasScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text('Mis deudas', style: hs(30, w: FontWeight.w600, ls: -0.5))),
-              circleBtn(Icons.file_download_outlined, () => exportExcel(context, s),
+              circleBtn(Ic.download, () => exportExcel(context, s),
                   label: 'Exportar a Excel'),
               const SizedBox(width: 10),
-              circleBtn(Icons.add, () {
+              circleBtn(Ic.plus, () {
                 Navigator.of(context)
                     .push(MaterialPageRoute<void>(builder: (_) => const AgregarScreen()));
               }, label: 'Agregar deuda'),
@@ -95,13 +96,13 @@ class _DeudasScreenState extends State<DeudasScreen> {
                 const SizedBox(height: 2),
                 Text(money(s.totalDebt), style: ts(p, 38, w: FontWeight.w700, ls: -1, tab: true, h: 1.1)),
                 const SizedBox(height: 12),
-                splitBar(p, [for (final d in all) MapEntry(d.balance, colorOf[d.id]!)], height: 14),
+                splitBar(p, [for (final d in all) MapEntry(s.balanceOf(d), colorOf[d.id]!)], height: 14),
                 const SizedBox(height: 14),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   for (final d in all)
                     outlineChip(
                       p,
-                      '${d.name.replaceFirst('Préstamo ', '').replaceFirst('Tarjeta ', 'T. ')} ${s.totalDebt > 0 ? (d.balance / s.totalDebt * 100).round() : 0}%',
+                      '${d.name.replaceFirst('Préstamo ', '').replaceFirst('Tarjeta ', 'T. ')} ${s.totalDebt > 0 ? (s.balanceOf(d) / s.totalDebt * 100).round() : 0}%',
                       dot: colorOf[d.id],
                       border: colorOf[d.id],
                     ),
@@ -121,7 +122,7 @@ class _DeudasScreenState extends State<DeudasScreen> {
                   ),
                 for (var i = 0; i < list.length; i++) ...[
                   if (i > 0) divider(p),
-                  _row(context, p, list[i]),
+                  _row(context, p, s, list[i]),
                 ],
               ]),
             ),
@@ -131,7 +132,7 @@ class _DeudasScreenState extends State<DeudasScreen> {
     );
   }
 
-  Widget _row(BuildContext context, Pal p, Debt d) {
+  Widget _row(BuildContext context, Pal p, AppStore s, Debt d) {
     Color fg;
     Color bg;
     switch (d.level) {
@@ -155,7 +156,7 @@ class _DeudasScreenState extends State<DeudasScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(children: [
-          iconTile(Icons.percent, fg, bg, size: 44),
+          iconTile(Ic.percent, fg, bg, size: 44),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -176,9 +177,9 @@ class _DeudasScreenState extends State<DeudasScreen> {
           ),
           const SizedBox(width: 8),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(money(d.balance), style: ts(p, 17, w: FontWeight.w600, tab: true)),
+            Text(money(s.balanceOf(d)), style: ts(p, 17, w: FontWeight.w600, tab: true)),
             const SizedBox(height: 2),
-            Text('Cuota ${money(d.cuota)} · día ${d.payDay}',
+            Text(s.balanceOf(d) <= 0.5 ? 'Pagada' : 'Cuota ${money(d.paymentFor(s.ymNow))} · día ${d.payDay}',
                 style: ts(p, 11, color: p.muted)),
           ]),
         ]),

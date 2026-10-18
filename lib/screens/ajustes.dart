@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../export.dart';
 import '../store.dart';
 import '../theme.dart';
@@ -43,7 +44,7 @@ class AjustesScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             Row(children: [
-              roundButton(p, Icons.chevron_left, () => Navigator.of(context).pop(), label: 'Volver'),
+              roundButton(p, Ic.back, () => Navigator.of(context).pop(), label: 'Volver'),
               const SizedBox(width: 12),
             ]),
             const SizedBox(height: 12),
@@ -73,7 +74,7 @@ class AjustesScreen extends StatelessWidget {
                             style: ts(p, 12, color: p.muted, h: 1.4)),
                       ]),
                     ),
-                    Icon(Icons.ios_share, color: p.pri, size: 22),
+                    Icon(Ic.share, color: p.pri, size: 22),
                   ]),
                 ),
               ),

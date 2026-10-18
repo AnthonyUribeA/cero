@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../icons.dart';
 import '../format.dart';
 import '../loan.dart';
 import '../models.dart';
@@ -16,7 +17,8 @@ class DetalleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = Pal.of(context);
     final s = StoreScope.of(context);
-    final d = s.debtById(debtId);
+    final orig = s.debtById(debtId);
+    final d = orig.atMonth(s.ymNow);
     final plan = s.plan;
     final due = nextDue(d.payDay, s.now);
     final n = daysUntil(due, s.now);
@@ -25,7 +27,7 @@ class DetalleScreen extends StatelessWidget {
     final share = d.cuota > 0 ? (interest / d.cuota * 100).round() : 0;
     final endMonth = plan.close[d.id] ?? plan.months;
     final remaining = plan.interestBy[d.id] ?? 0;
-    final isPaid = s.paid.contains(d.id);
+    final isPaid = s.isPaid(orig);
 
     // Próximas tres cuotas, según el cronograma de esta deuda.
     final start = d.planStart ?? s.ymNow;
@@ -87,15 +89,18 @@ class DetalleScreen extends StatelessWidget {
               Text(d.name, style: hs(28, w: FontWeight.w600, ls: -0.5)),
               const SizedBox(height: 12),
               Text('Saldo pendiente', style: hs(13, color: const Color(0xB3FFFFFF))),
-              Text(money(d.balance), style: hs(44, w: FontWeight.w700, ls: -1.2)),
+              Text(money(s.balanceOf(orig)), style: hs(44, w: FontWeight.w700, ls: -1.2)),
               const SizedBox(height: 2),
               Text('${d.rateLabel} · cuota ${money(d.cuota)} · día ${d.payDay}',
                   style: hs(13,
                       w: FontWeight.w600,
                       color: d.monthlyRate > 0 ? const Color(0xFFFF9F9F) : mint)),
-              if (d.principal != null && d.termMonths != null) ...[
+              if (d.termMonths != null) ...[
                 const SizedBox(height: 4),
-                Text('Préstamo de ${money(d.principal!)} en ${d.termMonths} cuotas',
+                Text(
+                    '${d.principal != null ? 'Préstamo de ${money(d.principal!)} · ' : ''}'
+                    '${isPaid ? 'pagaste la cuota' : 'vas en la cuota'} '
+                    '${((d.paidCount ?? 0) + 1).clamp(1, d.termMonths!)} de ${d.termMonths}',
                     style: hs(13, color: const Color(0xB3FFFFFF))),
               ],
             ]),
@@ -104,11 +109,11 @@ class DetalleScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: Column(children: [
               Row(children: [
-                stat(Icons.schedule, '$endMonth pagos', 'que faltan'),
+                stat(Ic.clock, '$endMonth pagos', 'que faltan'),
                 const SizedBox(width: 10),
-                stat(Icons.percent, money(interest), 'interés al mes'),
+                stat(Ic.percent, money(interest), 'interés al mes'),
                 const SizedBox(width: 10),
-                stat(Icons.event_outlined, _cap(monthLabel(s.startMonth, endMonth)), 'termina'),
+                stat(Ic.calendar, _cap(monthLabel(s.startMonth, endMonth)), 'termina'),
               ]),
               const SizedBox(height: 14),
               panel(
@@ -197,7 +202,12 @@ class DetalleScreen extends StatelessWidget {
                     ),
                   ));
                   if (res != null) {
-                    s.updateDebt(d.copyWith(extras: res, planStart: start));
+                    final off = s.ymNow - (orig.planStart ?? s.ymNow);
+                    s.updateDebt(orig.copyWith(extras: {
+                      for (final e in orig.extras.entries)
+                        if (e.key < off) e.key: e.value,
+                      for (final e in res.entries) e.key + off: e.value,
+                    }));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Listo: tus nuevos pagos ya están en el plan y el calendario.')));
@@ -205,7 +215,7 @@ class DetalleScreen extends StatelessWidget {
                   }
                 },
                 child: Row(children: [
-                  iconTile(Icons.table_rows_outlined, p.green, p.okBg, size: 44),
+                  iconTile(Ic.table, p.green, p.okBg, size: 44),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -217,12 +227,12 @@ class DetalleScreen extends StatelessWidget {
                           style: ts(p, 12, color: p.muted)),
                     ]),
                   ),
-                  Icon(Icons.chevron_right, color: p.muted),
+                  Icon(Ic.next, color: p.muted),
                 ]),
               ),
               const SizedBox(height: 16),
               wideButton(p, isPaid ? 'Marcar como pendiente' : 'Registrar pago de este mes',
-                  () => s.togglePaid(d.id)),
+                  () => s.togglePaid(orig.id)),
               const SizedBox(height: 10),
               Row(children: [
                 bigButton(p, 'Sumar S/ 500 de extra al plan', () {

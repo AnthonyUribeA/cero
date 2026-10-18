@@ -22,6 +22,7 @@ class AppStore extends ChangeNotifier {
       Expense(id: 'v2', kind: ExpenseKind.variable, category: 'Transporte', note: 'Pasajes', amount: 210, date: day(6), method: 'Efectivo'),
       Expense(id: 'v3', kind: ExpenseKind.variable, category: 'Salud', note: 'Farmacia', amount: 85, date: day(9), method: 'Yape'),
     ]);
+    _migrate();
     incomes.addAll([
       IncomeItem(id: 'i1', label: 'Aporte de mamá', amount: 500, date: day(14), tag: 'Familia'),
       IncomeItem(id: 'i2', label: 'Trabajo extra', amount: 300, date: day(9), tag: 'Extra'),
@@ -74,11 +75,30 @@ class AppStore extends ChangeNotifier {
   final DateTime now = DateTime.now();
   DateTime get startMonth => DateTime(now.year, now.month);
 
-  double get totalDebt => debts.fold(0.0, (s, d) => s + d.balance);
+  double get totalDebt => debts.fold(0.0, (t, d) => t + balanceOf(d));
   int get ymNow => now.year * 12 + now.month - 1;
+
+  void _migrate() {
+    for (var i = 0; i < debts.length; i++) {
+      if (debts[i].planStart == null) debts[i] = debts[i].copyWith(planStart: ymNow);
+    }
+  }
+
+  /// Las deudas como están este mes (antes de pagar la cuota del mes).
+  List<Debt> get current => [for (final d in debts) d.atMonth(ymNow)];
+
+  bool isPaid(Debt d) => paid.contains('${d.id}|$ymNow');
+
+  /// Saldo de hoy: si ya pagaste la cuota del mes, lo que queda después.
+  double balanceOf(Debt d) {
+    final c = d.atMonth(ymNow);
+    if (!isPaid(d)) return c.balance;
+    final rows = c.schedule;
+    return rows.isEmpty ? 0 : rows.first.remaining;
+  }
   double get totalCuotas => debts.fold(0.0, (s, d) => s + d.paymentFor(ymNow));
   double get totalIncome => people.fold(0.0, (s, p) => s + p.income);
-  double get totalInterest => debts.fold(0.0, (s, d) => s + d.firstMonthInterest);
+  double get totalInterest => current.fold(0.0, (t, d) => t + d.firstMonthInterest);
 
   /// Lo que aporta cada persona: las cuotas repartidas según el sueldo.
   List<double> contributions(double amount) {
@@ -124,17 +144,18 @@ class AppStore extends ChangeNotifier {
       totalIncome + extraIncomeMonth - totalCuotas - fixedTotal - varBudgetTotal - hormigaCap;
 
   List<String> get order => strategy == Strategy.avalancha
-      ? avalancheOrder(debts)
-      : snowballOrder(debts);
+      ? avalancheOrder(current)
+      : snowballOrder(current);
 
-  SimResult get plan => simulate(debts, order, extra, roll: true, startYm: ymNow);
-  SimResult get base => simulate(debts, avalancheOrder(debts), 0, roll: false, startYm: ymNow);
-  double get needForGoal => neededExtra(debts, order, goalMonths, startYm: ymNow);
+  SimResult get plan => simulate(current, order, extra, roll: true, startYm: ymNow);
+  SimResult get base => simulate(current, avalancheOrder(current), 0, roll: false, startYm: ymNow);
+  double get needForGoal => neededExtra(current, order, goalMonths, startYm: ymNow);
 
   Debt debtById(String id) => debts.firstWhere((d) => d.id == id);
 
   void togglePaid(String id) {
-    if (!paid.remove(id)) paid.add(id);
+    final k = '$id|$ymNow';
+    if (!paid.remove(k)) paid.add(k);
     notifyListeners();
   }
 
@@ -169,7 +190,7 @@ class AppStore extends ChangeNotifier {
   }
 
   void addDebt(Debt d) {
-    debts.add(d);
+    debts.add(d.planStart == null ? d.copyWith(planStart: ymNow) : d);
     notifyListeners();
   }
 
@@ -267,6 +288,7 @@ class AppStore extends ChangeNotifier {
         ..clear()
         ..addAll(list('incomes').map(IncomeItem.fromJson));
     }
+    _migrate();
     fixedPaid
       ..clear()
       ..addAll([for (final x in (j['fixedPaid'] as List? ?? const [])) x as String]);

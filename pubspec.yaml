@@ -13,6 +13,7 @@ dependencies:
   path_provider: ^2.1.5
   share_plus: ^10.1.4
   shared_preferences: ^2.3.3
+  phosphor_flutter: ^2.1.0
 
 dev_dependencies:
   flutter_test:

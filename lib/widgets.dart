@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'icons.dart';
 import 'models.dart';
 import 'theme.dart';
 
@@ -96,13 +97,13 @@ Widget stepper(Pal p,
   return Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      roundButton(p, Icons.remove, onLess, label: lessLabel),
+      roundButton(p, Ic.minus, onLess, label: lessLabel),
       SizedBox(
         width: width,
         child: Text(value,
             textAlign: TextAlign.center, style: ts(p, 18, w: FontWeight.w700, tab: true)),
       ),
-      roundButton(p, Icons.add, onMore, label: moreLabel),
+      roundButton(p, Ic.plus, onMore, label: moreLabel),
     ],
   );
 }
@@ -271,7 +272,7 @@ Widget backBtn(BuildContext context) {
         width: 42,
         height: 42,
         decoration: const BoxDecoration(color: Color(0x24FFFFFF), shape: BoxShape.circle),
-        child: const Icon(Icons.chevron_left, size: 24, color: Colors.white),
+        child: const Icon(Ic.back, size: 24, color: Colors.white),
       ),
     ),
   );
@@ -326,7 +327,15 @@ Widget iconTile(IconData icon, Color fg, Color bg, {double size = 42}) {
   return Container(
     width: size,
     height: size,
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(size * 0.32),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [bg, bg.withValues(alpha: bg.a * 0.45)],
+      ),
+      border: Border.all(color: fg.withValues(alpha: 0.22), width: 1),
+    ),
     child: Icon(icon, size: size * 0.5, color: fg),
   );
 }
@@ -348,7 +357,7 @@ Widget checkBox(Pal p, bool on, VoidCallback? onTap) {
             border: on ? null : Border.all(color: p.muted, width: 2),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: on ? const Icon(Icons.check, size: 18, color: Color(0xFF04261B)) : null,
+          child: on ? const Icon(Ic.check, size: 18, color: Color(0xFF04261B)) : null,
         ),
       ),
     ),
@@ -383,7 +392,7 @@ Route<void> subPage(Widget child) {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: roundButton(p, Icons.chevron_left, () => Navigator.of(context).pop(),
+                  child: roundButton(p, Ic.back, () => Navigator.of(context).pop(),
                       label: 'Volver'),
                 ),
               ),
