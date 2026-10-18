@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'format.dart';
+import 'models.dart';
 import 'store.dart';
 
 CellValue _t(String s) => TextCellValue(s);
