@@ -135,7 +135,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
           rateKind: rk,
           months: rows.length,
           interest: scheduleInterest(rows),
-          total: rows.fold(0.0, (t, x) => t + x.pay),
+          total: rows.fold<double>(0.0, (t, x) => t + x.pay),
           lastPay: rows.last.pay,
           term: plazo,
           warn: r <= 0
@@ -157,7 +157,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
           rateKind: r <= 0 ? RateKind.ninguna : RateKind.tea,
           months: rows.length,
           interest: scheduleInterest(rows),
-          total: rows.fold(0.0, (t, x) => t + x.pay),
+          total: rows.fold<double>(0.0, (t, x) => t + x.pay),
           term: n,
           paidCount: k,
           warn: c * n < p ? 'Las cuotas suman menos que lo prestado. Revisa los números.' : null,
