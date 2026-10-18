@@ -1,0 +1,18 @@
+# Revisa el código en cada cambio: análisis y pruebas. Gratis y sin Mac.
+name: Revisar
+on:
+  push:
+  pull_request:
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generar carpetas de plataforma
+        run: flutter create --platforms=ios,android --org com.auribe --project-name cero .
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

@@ -1,0 +1,50 @@
+# Compilación en la nube (Codemagic). No hace falta una Mac.
+workflows:
+  android-prueba:
+    name: Cero Android (prueba, gratis)
+    instance_type: linux_x2
+    max_build_duration: 30
+    environment:
+      flutter: stable
+    scripts:
+      - name: Generar carpetas de plataforma
+        script: flutter create --platforms=android --org com.auribe --project-name cero .
+      - name: Paquetes
+        script: flutter pub get
+      - name: Pruebas
+        script: flutter test
+      - name: APK de prueba
+        script: flutter build apk --debug
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+
+  ios-testflight:
+    name: Cero iOS (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: Cero-App-Store-Connect
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.auribe.cero
+    scripts:
+      - name: Generar carpetas de plataforma
+        script: flutter create --platforms=ios --org com.auribe --project-name cero .
+      - name: Paquetes
+        script: flutter pub get
+      - name: Pruebas
+        script: flutter test
+      - name: Firma
+        script: xcode-project use-profiles
+      - name: Compilar IPA
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
