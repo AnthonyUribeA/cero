@@ -46,7 +46,9 @@ class _Preview {
 }
 
 class AgregarScreen extends StatefulWidget {
-  const AgregarScreen({super.key});
+  /// Si viene una deuda, la pantalla sirve para editarla.
+  final Debt? edit;
+  const AgregarScreen({super.key, this.edit});
 
   @override
   State<AgregarScreen> createState() => _AgregarScreenState();
@@ -74,6 +76,40 @@ class _AgregarScreenState extends State<AgregarScreen> {
     (DebtKind.tarjeta, 'Tarjeta'),
     (DebtKind.cuota, 'En cuotas'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final d = widget.edit;
+    if (d == null) return;
+    String n(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+    kind = d.kind == DebtKind.otro ? DebtKind.prestamista : d.kind;
+    owner = d.owner;
+    day = d.payDay;
+    name.text = d.name;
+    rateMonthly = d.rateKind != RateKind.tea;
+    if (d.rate > 0) rate.text = n(d.rate * 100);
+    method = d.method;
+    extras = Map<int, double>.from(d.extras);
+    switch (kind) {
+      case DebtKind.prestamista:
+      case DebtKind.otro:
+        amount.text = n(d.balance);
+        plazo = d.remainingTerm ?? 12;
+        break;
+      case DebtKind.banco:
+      case DebtKind.cuota:
+        amount.text = n(d.principal ?? d.balance);
+        cuota.text = n(d.cuota);
+        if (d.termMonths != null) count.text = '${d.termMonths}';
+        paid = d.paidCount ?? 0;
+        break;
+      case DebtKind.tarjeta:
+        amount.text = n(d.balance);
+        cuota.text = n(d.cuota);
+        break;
+    }
+  }
 
   @override
   void dispose() {
@@ -228,8 +264,9 @@ class _AgregarScreenState extends State<AgregarScreen> {
           const SnackBar(content: Text('Completa el nombre y los montos para calcular la deuda.')));
       return;
     }
-    StoreScope.of(context).addDebt(Debt(
-      id: 'd${DateTime.now().microsecondsSinceEpoch}',
+    final st = StoreScope.of(context);
+    final debt = Debt(
+      id: widget.edit?.id ?? 'd${DateTime.now().microsecondsSinceEpoch}',
       name: name.text.trim(),
       kind: kind,
       owner: owner,
@@ -243,8 +280,13 @@ class _AgregarScreenState extends State<AgregarScreen> {
       paidCount: pv.paidCount,
       method: (kind == DebtKind.prestamista || kind == DebtKind.otro) ? method : 0,
       extras: _hasSchedule ? extras : const {},
-      planStart: _hasSchedule ? _startYm(StoreScope.of(context)) : null,
-    ));
+      planStart: _hasSchedule ? _startYm(st) : null,
+    );
+    if (widget.edit != null) {
+      st.updateDebt(debt);
+    } else {
+      st.addDebt(debt);
+    }
     Navigator.of(context).pop();
   }
 
@@ -437,7 +479,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
               Row(children: [
                 backBtn(context),
                 const SizedBox(width: 12),
-                Text('Nueva deuda', style: hs(26, w: FontWeight.w600, ls: -0.5)),
+                Text(widget.edit == null ? 'Nueva deuda' : 'Editar deuda', style: hs(26, w: FontWeight.w600, ls: -0.5)),
               ]),
               const SizedBox(height: 16),
               SingleChildScrollView(
@@ -497,7 +539,7 @@ class _AgregarScreenState extends State<AgregarScreen> {
                 _compare(p),
               ],
               const SizedBox(height: 16),
-              wideButton(p, 'Guardar deuda', () => _save(pv)),
+              wideButton(p, widget.edit == null ? 'Guardar deuda' : 'Guardar cambios', () => _save(pv)),
             ]),
           ),
         ],

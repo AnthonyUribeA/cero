@@ -7,6 +7,7 @@ import '../models.dart';
 import '../store.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'agregar.dart';
 import 'cronograma.dart';
 
 class DetalleScreen extends StatelessWidget {
@@ -17,6 +18,7 @@ class DetalleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = Pal.of(context);
     final s = StoreScope.of(context);
+    if (!s.debts.any((x) => x.id == debtId)) return Scaffold(backgroundColor: p.bg);
     final orig = s.debtById(debtId);
     final d = orig.atMonth(s.ymNow);
     final plan = s.plan;
@@ -76,6 +78,12 @@ class DetalleScreen extends StatelessWidget {
               Row(children: [
                 backBtn(context),
                 const Spacer(),
+                circleBtn(Ic.edit, () {
+                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AgregarScreen(edit: d)));
+                }, label: 'Editar deuda'),
+                const SizedBox(width: 10),
+                circleBtn(Ic.trash, () => _confirmDelete(context, s, orig.id, orig.name), label: 'Eliminar deuda'),
+                const SizedBox(width: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
@@ -242,6 +250,34 @@ class DetalleScreen extends StatelessWidget {
                 }, outline: true),
               ]),
             ]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, AppStore s, String id, String name) {
+    final p = Pal.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: p.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('¿Eliminar $name?', style: ts(p, 18, w: FontWeight.w700)),
+        content: Text('Se borra la deuda, su cronograma y sus pagos marcados. No se puede deshacer.',
+            style: ts(p, 14, color: p.muted, h: 1.45)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancelar', style: ts(p, 14, w: FontWeight.w700, color: p.muted)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+              s.removeDebt(id);
+            },
+            child: Text('Eliminar', style: ts(p, 14, w: FontWeight.w700, color: p.red)),
           ),
         ],
       ),

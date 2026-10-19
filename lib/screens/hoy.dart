@@ -9,7 +9,10 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'ajustes.dart';
 import 'arranque.dart';
+import 'agregar.dart';
+import 'agregar_gasto.dart';
 import 'detalle.dart';
+import 'ingresos.dart';
 import 'pagos.dart';
 
 class _Upcoming {
@@ -97,6 +100,10 @@ class HoyScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Column(children: [
+            if (s.needsSetup) ...[
+              _setup(context, p, s),
+              const SizedBox(height: 16),
+            ],
             _dashboard(context, p, s),
             const SizedBox(height: 16),
             Row(children: [
@@ -297,6 +304,70 @@ class HoyScreen extends StatelessWidget {
       const SizedBox(height: 12),
       _interestCard(context, p, s),
     ]);
+  }
+
+  Widget _setup(BuildContext context, Pal p, AppStore s) {
+    Widget step(int n, String t, String sub, bool done, Widget page) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: done ? mint : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: done ? null : Border.all(color: p.line, width: 1.5),
+                ),
+                child: done
+                    ? const Icon(Ic.check, size: 16, color: Color(0xFF04261B))
+                    : Text('$n', style: ts(p, 13, w: FontWeight.w700)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(t,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: done ? p.muted : p.text,
+                        decoration: done ? TextDecoration.lineThrough : null,
+                        decorationColor: p.muted,
+                      )),
+                  Text(sub, style: ts(p, 12, color: p.muted)),
+                ]),
+              ),
+              Icon(Ic.next, size: 18, color: p.muted),
+            ]),
+          ),
+        );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+      decoration: BoxDecoration(
+        color: p.card,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: mint, width: 1.5),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Ic.start, color: mint, size: 22),
+          const SizedBox(width: 8),
+          Text('Empieza aquí', style: ts(p, 18, w: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 4),
+        Text('Tres pasos para que la app trabaje con tus números reales.',
+            style: ts(p, 12, color: p.muted, h: 1.4)),
+        const SizedBox(height: 4),
+        step(1, 'Pon tu sueldo', 'Y el de los demás si comparten gastos', s.totalIncome > 0, const IngresosScreen()),
+        step(2, 'Agrega tus deudas', 'Prestamistas, bancos, tarjetas, cuotas', s.debts.isNotEmpty, const AgregarScreen()),
+        step(3, 'Agrega tus gastos fijos', 'Alquiler, luz, agua, internet...', s.fixed.isNotEmpty,
+            const AgregarGastoScreen(initialKind: 0)),
+      ]),
+    );
   }
 
   Widget _interestCard(BuildContext context, Pal p, AppStore s) {

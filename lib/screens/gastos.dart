@@ -140,7 +140,10 @@ class _GastosScreenState extends State<GastosScreen> {
 
   Widget _fixedRow(Pal p, AppStore s, FixedBill f) {
     final paid = s.isFixedPaid(f);
-    return Padding(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _editFixed(s, f),
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(children: [
         iconTile(fixedIcon(f.name), kFijo, kFijo.withValues(alpha: 0.16), size: 40),
@@ -162,6 +165,16 @@ class _GastosScreenState extends State<GastosScreen> {
             style: ts(p, 16, w: FontWeight.w600, tab: true, color: paid ? p.muted : p.text)),
         checkBox(p, paid, () => s.toggleFixed(f)),
       ]),
+    ),
+    );
+  }
+
+  void _editFixed(AppStore s, FixedBill f) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FixedSheet(f: f),
     );
   }
 
@@ -237,7 +250,18 @@ class _GastosScreenState extends State<GastosScreen> {
                 (s.varBudget[c] ?? 0) > 0 ? s.varSpent(c) / (s.varBudget[c] ?? 1) : 0,
                 s.varSpent(c) > (s.varBudget[c] ?? 0) ? p.redFill : kVar,
                 height: 8),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: Text('Presupuesto', style: ts(p, 12, w: FontWeight.w600, color: p.muted))),
+              stepper(p,
+                  value: money(s.varBudget[c] ?? 0),
+                  width: 76,
+                  onLess: (s.varBudget[c] ?? 0) <= 0 ? null : () => s.setVarBudget(c, (s.varBudget[c] ?? 0) - 50),
+                  onMore: () => s.setVarBudget(c, (s.varBudget[c] ?? 0) + 50),
+                  lessLabel: 'Bajar presupuesto de $c',
+                  moreLabel: 'Subir presupuesto de $c'),
+            ]),
+            const SizedBox(height: 16),
           ],
         ]),
       ),
@@ -328,6 +352,105 @@ class _GastosScreenState extends State<GastosScreen> {
           ),
         ],
       ]),
+    );
+  }
+}
+
+/// Hoja para editar o eliminar un gasto fijo.
+class _FixedSheet extends StatefulWidget {
+  final FixedBill f;
+  const _FixedSheet({required this.f});
+
+  @override
+  State<_FixedSheet> createState() => _FixedSheetState();
+}
+
+class _FixedSheetState extends State<_FixedSheet> {
+  late final nameC = TextEditingController(text: widget.f.name);
+  late final amountC = TextEditingController(text: widget.f.amount.toStringAsFixed(0));
+  late int day = widget.f.day;
+
+  @override
+  void dispose() {
+    nameC.dispose();
+    amountC.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    final s = StoreScope.of(context);
+    InputDecoration deco(String hint) => InputDecoration(
+          hintText: hint,
+          hintStyle: ts(p, 16, color: p.muted.withValues(alpha: 0.55)),
+          isCollapsed: true,
+          border: InputBorder.none,
+        );
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        decoration: BoxDecoration(
+          color: p.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Editar gasto fijo', style: ts(p, 20, w: FontWeight.w700)),
+          const SizedBox(height: 14),
+          Text('Nombre', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: nameC,
+            style: ts(p, 16, w: FontWeight.w600),
+            cursorColor: p.green,
+            decoration: deco('Alquiler, luz...'),
+          ),
+          const SizedBox(height: 10),
+          divider(p),
+          const SizedBox(height: 12),
+          Text('Monto de cada mes', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: amountC,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: ts(p, 22, w: FontWeight.w700),
+            cursorColor: p.green,
+            decoration: deco('S/ 0'),
+          ),
+          const SizedBox(height: 10),
+          divider(p),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: Text('Se paga el día', style: ts(p, 14, w: FontWeight.w700))),
+            stepper(p,
+                value: 'Día $day',
+                width: 70,
+                onLess: day > 1 ? () => setState(() => day--) : null,
+                onMore: day < 31 ? () => setState(() => day++) : null,
+                lessLabel: 'Día anterior',
+                moreLabel: 'Día siguiente'),
+          ]),
+          const SizedBox(height: 18),
+          wideButton(p, 'Guardar cambios', () {
+            final a = double.tryParse(amountC.text.trim().replaceAll(',', '')) ?? widget.f.amount;
+            s.updateFixed(FixedBill(
+              id: widget.f.id,
+              name: nameC.text.trim().isEmpty ? widget.f.name : nameC.text.trim(),
+              amount: a,
+              day: day,
+            ));
+            Navigator.of(context).pop();
+          }),
+          const SizedBox(height: 10),
+          Row(children: [
+            bigButton(p, 'Eliminar este gasto', () {
+              s.removeFixed(widget.f.id);
+              Navigator.of(context).pop();
+            }, outline: true),
+          ]),
+        ]),
+      ),
     );
   }
 }

@@ -43,5 +43,10 @@ class Ic {
   static const IconData check = IconData(0xe182, fontFamily: 'PhosphorBold');
   static const IconData bolt = IconData(0xe2de, fontFamily: 'PhosphorRegular');
   static const IconData house = IconData(0xe2c4, fontFamily: 'PhosphorRegular');
+  static const IconData edit = IconData(0xe3b4, fontFamily: 'PhosphorRegular');
+  static const IconData trash = IconData(0xe4a6, fontFamily: 'PhosphorRegular');
+  static const IconData user = IconData(0xe4c4, fontFamily: 'PhosphorRegular');
+  static const IconData reset = IconData(0xe038, fontFamily: 'PhosphorRegular');
+  static const IconData start = IconData(0xe6a2, fontFamily: 'PhosphorRegular');
   static const IconData other = IconData(0xe200, fontFamily: 'PhosphorRegular');
 }

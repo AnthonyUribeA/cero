@@ -229,7 +229,7 @@ String _pct(double v) {
 }
 
 class Person {
-  final String name;
+  String name;
   final String short;
   final int payDay;
   double income;

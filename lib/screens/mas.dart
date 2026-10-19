@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../icons.dart';
 import '../export.dart';
 import '../format.dart';
-import '../models.dart';
 import '../store.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -66,7 +65,7 @@ class MasScreen extends StatelessWidget {
               p,
               radius: 26,
               pad: const EdgeInsets.fromLTRB(18, 16, 18, 8),
-              onTap: () => Navigator.of(context).push(subPage(const IngresosScreen())),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const IngresosScreen())),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text('Ingresos del mes', style: ts(p, 18, w: FontWeight.w600)),
@@ -101,7 +100,7 @@ class MasScreen extends StatelessWidget {
               ]),
             ),
             const SizedBox(height: 12),
-            wideButton(p, 'Agregar ingreso extra', () => _addIncome(context)),
+            wideButton(p, 'Agregar ingreso extra', () => showIncomeSheet(context)),
             const SizedBox(height: 14),
             panel(
               p,
@@ -113,6 +112,8 @@ class MasScreen extends StatelessWidget {
                 }, top: false),
                 row(Ic.download, 'Exportar a Excel', 'Deudas, aportes y calendario',
                     () => exportExcel(context, s)),
+                row(Ic.reset, 'Empezar de cero', 'Borra los datos de ejemplo para poner los tuyos',
+                    () => _confirmReset(context, s)),
                 Padding(
                   padding: const EdgeInsets.only(top: 6, bottom: 16),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -166,109 +167,31 @@ class MasScreen extends StatelessWidget {
     );
   }
 
-  void _addIncome(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _IncomeSheet(),
-    );
-  }
-}
 
-class _IncomeSheet extends StatefulWidget {
-  const _IncomeSheet();
-
-  @override
-  State<_IncomeSheet> createState() => _IncomeSheetState();
-}
-
-class _IncomeSheetState extends State<_IncomeSheet> {
-  final labelC = TextEditingController();
-  final amountC = TextEditingController();
-  String tag = 'Extra';
-  String? error;
-
-  @override
-  void dispose() {
-    labelC.dispose();
-    amountC.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  void _confirmReset(BuildContext context, AppStore s) {
     final p = Pal.of(context);
-    final s = StoreScope.of(context);
-    InputDecoration deco(String hint) => InputDecoration(
-          hintText: hint,
-          hintStyle: ts(p, 16, color: p.muted),
-          isCollapsed: true,
-          border: InputBorder.none,
-        );
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        decoration: BoxDecoration(
-          color: p.card,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Ingreso extra', style: ts(p, 20, w: FontWeight.w700)),
-          const SizedBox(height: 14),
-          Text('Qué fue', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
-          const SizedBox(height: 6),
-          TextField(
-            controller: labelC,
-            style: ts(p, 16, w: FontWeight.w600),
-            cursorColor: p.green,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: deco('Aporte de mamá, trabajo extra...'),
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: p.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('¿Empezar de cero?', style: ts(p, 18, w: FontWeight.w700)),
+        content: Text(
+            'Se borran todas las deudas, gastos, ingresos y pagos marcados. Luego la app te guía para poner los tuyos. No se puede deshacer.',
+            style: ts(p, 14, color: p.muted, h: 1.45)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancelar', style: ts(p, 14, w: FontWeight.w700, color: p.muted)),
           ),
-          const SizedBox(height: 10),
-          divider(p),
-          const SizedBox(height: 12),
-          Text('Monto', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
-          const SizedBox(height: 6),
-          TextField(
-            controller: amountC,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: ts(p, 22, w: FontWeight.w700),
-            cursorColor: p.green,
-            decoration: deco('S/ 0.00'),
+          TextButton(
+            onPressed: () {
+              s.resetAll();
+              Navigator.of(ctx).pop();
+            },
+            child: Text('Borrar todo', style: ts(p, 14, w: FontWeight.w700, color: p.red)),
           ),
-          const SizedBox(height: 10),
-          divider(p),
-          const SizedBox(height: 12),
-          Row(children: [
-            for (final t in const ['Extra', 'Familia']) ...[
-              outlineChip(p, t, on: tag == t, onTap: () => setState(() => tag = t)),
-              const SizedBox(width: 8),
-            ],
-          ]),
-          if (error != null) ...[
-            const SizedBox(height: 8),
-            Text(error!, style: ts(p, 12, w: FontWeight.w700, color: p.red)),
-          ],
-          const SizedBox(height: 16),
-          wideButton(p, 'Guardar ingreso', () {
-            final a = double.tryParse(amountC.text.trim().replaceAll(',', '.'));
-            if (a == null || a <= 0) {
-              setState(() => error = 'Pon un monto mayor que cero');
-              return;
-            }
-            final l = labelC.text.trim();
-            s.addIncome(IncomeItem(
-              id: 'i${DateTime.now().microsecondsSinceEpoch}',
-              label: l.isEmpty ? tag : l,
-              amount: a,
-              date: DateTime(s.now.year, s.now.month, s.now.day),
-              tag: tag,
-            ));
-            Navigator.of(context).pop();
-          }),
-        ]),
+        ],
       ),
     );
   }

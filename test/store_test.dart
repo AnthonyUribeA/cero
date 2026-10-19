@@ -102,4 +102,25 @@ void main() {
     expect(s.interestThisMonth + s.capitalThisMonth, closeTo(s.totalCuotas, 1));
     expect(s.interestByDebt.first.$2, greaterThanOrEqualTo(s.interestByDebt.last.$2));
   });
+
+  test('empezar de cero deja la app vacía y pide los datos', () {
+    final s = AppStore();
+    expect(s.needsSetup, isFalse);
+    s.resetAll();
+    expect(s.debts, isEmpty);
+    expect(s.fixed, isEmpty);
+    expect(s.totalIncome, 0);
+    expect(s.needsSetup, isTrue);
+    expect(s.plan.months, 0);
+    expect(s.freeMargin, 0);
+  });
+
+  test('editar y borrar un gasto fijo', () {
+    final s = AppStore();
+    final f = s.fixed.first;
+    s.updateFixed(FixedBill(id: f.id, name: 'Alquiler nuevo', amount: 2000, day: 3));
+    expect(s.fixed.first.amount, 2000);
+    s.removeFixed(f.id);
+    expect(s.fixed.any((x) => x.id == f.id), isFalse);
+  });
 }

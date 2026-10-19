@@ -235,9 +235,64 @@ class AppStore extends ChangeNotifier {
 
   void updateDebt(Debt d) {
     final i = debts.indexWhere((x) => x.id == d.id);
-    if (i >= 0) debts[i] = d;
+    if (i >= 0) debts[i] = d.planStart == null ? d.copyWith(planStart: ymNow) : d;
     notifyListeners();
   }
+
+  void removeDebt(String id) {
+    debts.removeWhere((d) => d.id == id);
+    paid.removeWhere((k) => k.startsWith('$id|'));
+    notifyListeners();
+  }
+
+  void updateFixed(FixedBill f) {
+    final i = fixed.indexWhere((x) => x.id == f.id);
+    if (i >= 0) fixed[i] = f;
+    notifyListeners();
+  }
+
+  void removeFixed(String id) {
+    fixed.removeWhere((f) => f.id == id);
+    fixedPaid.removeWhere((k) => k.startsWith('$id|'));
+    notifyListeners();
+  }
+
+  void setUserName(String v) {
+    userName = v.trim().isEmpty ? 'Tú' : v.trim();
+    notifyListeners();
+  }
+
+  void setPersonName(int i, String v) {
+    if (v.trim().isNotEmpty) people[i].name = v.trim();
+    notifyListeners();
+  }
+
+  void setVarBudget(String cat, double v) {
+    varBudget[cat] = v.clamp(0, 50000).toDouble();
+    notifyListeners();
+  }
+
+  /// Borra los datos de ejemplo para empezar con los tuyos.
+  void resetAll() {
+    debts.clear();
+    fixed.clear();
+    expenses.clear();
+    incomes.clear();
+    paid.clear();
+    fixedPaid.clear();
+    for (final x in people) {
+      x.income = 0;
+    }
+    for (final k in varBudget.keys.toList()) {
+      varBudget[k] = 0;
+    }
+    hormigaCap = 0;
+    extra = 0;
+    notifyListeners();
+  }
+
+  /// Faltan datos básicos: se muestra la guía "Empieza aquí".
+  bool get needsSetup => totalIncome <= 0 || debts.isEmpty || fixed.isEmpty;
 
   void toggleFixed(FixedBill f) {
     final k = '${f.id}|$_ym';

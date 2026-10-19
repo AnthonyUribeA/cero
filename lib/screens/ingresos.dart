@@ -1,129 +1,328 @@
 import 'package:flutter/material.dart';
-import '../icons.dart';
 import '../format.dart';
+import '../icons.dart';
 import '../models.dart';
 import '../store.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
+/// Abre la hoja para anotar un ingreso extra.
+void showIncomeSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const IncomeSheet(),
+  );
+}
+
+/// Campo de texto que guarda al terminar de escribir.
+class _EditField extends StatefulWidget {
+  final String initial;
+  final String hint;
+  final bool numeric;
+  final ValueChanged<String> onDone;
+  final TextStyle style;
+  const _EditField({
+    super.key,
+    required this.initial,
+    required this.hint,
+    required this.onDone,
+    required this.style,
+    this.numeric = false,
+  });
+
+  @override
+  State<_EditField> createState() => _EditFieldState();
+}
+
+class _EditFieldState extends State<_EditField> {
+  late final c = TextEditingController(text: widget.initial);
+  final f = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    f.addListener(() {
+      if (!f.hasFocus) widget.onDone(c.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    c.dispose();
+    f.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    return TextField(
+      controller: c,
+      focusNode: f,
+      style: widget.style,
+      cursorColor: p.green,
+      keyboardType: widget.numeric
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      textCapitalization: widget.numeric ? TextCapitalization.none : TextCapitalization.words,
+      decoration: InputDecoration(
+        hintText: widget.hint,
+        hintStyle: widget.style.copyWith(color: p.muted.withValues(alpha: 0.55)),
+        isCollapsed: true,
+        border: InputBorder.none,
+      ),
+      onSubmitted: widget.onDone,
+    );
+  }
+}
+
 class IngresosScreen extends StatelessWidget {
   const IngresosScreen({super.key});
-
-  static const _owners = [Owner.tu, Owner.pareja, Owner.persona3];
 
   @override
   Widget build(BuildContext context) {
     final p = Pal.of(context);
     final s = StoreScope.of(context);
-    final total = s.totalIncome;
-    final cuotas = s.totalCuotas;
-    final aportes = s.contributions(cuotas);
-    final debtPct = total > 0 ? (cuotas / total * 100).round() : 100;
-    final pcts = [
-      for (final x in s.people) total > 0 ? (x.income / total * 100).round() : 0
-    ];
+    final extras = s.incomes.where((i) => i.date.year == s.now.year && i.date.month == s.now.month).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    double parse(String v) => double.tryParse(v.replaceAll(',', '').replaceAll(' ', '')) ?? 0;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      children: [
-        screenTitle(p, 'Cada uno aporta según lo que gana', 'Ingresos y reparto'),
-        const SizedBox(height: 16),
-        panel(
-          p,
-          radius: 28,
-          color: p.card2,
-          pad: const EdgeInsets.all(22),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Ingreso de los ${s.people.length} cada mes', style: ts(p, 14, color: p.muted)),
-            Text(money(total), style: ts(p, 44, w: FontWeight.w700, ls: -1.3, tab: true, h: 1.1)),
-            const SizedBox(height: 14),
-            splitBar(p, [
-              for (var i = 0; i < s.people.length; i++)
-                MapEntry(s.people[i].income, p.own[_owners[i]]!),
-            ], height: 14),
-            const SizedBox(height: 10),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              for (var i = 0; i < s.people.length; i++)
-                Text('${s.people[i].short} ${pcts[i]}%',
-                    style: ts(p, 13, w: FontWeight.w600, color: p.own[_owners[i]])),
+    Widget box(Widget child) => Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color: p.card2,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: p.line),
+          ),
+          child: child,
+        );
+
+    return Scaffold(
+      backgroundColor: p.bg,
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 40),
+        children: [
+          CeroHeader(
+            bottom: 24,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                backBtn(context),
+                const SizedBox(width: 12),
+                Text('Ingresos', style: hs(26, w: FontWeight.w600, ls: -0.5)),
+              ]),
+              const SizedBox(height: 16),
+              Text('Entra este mes', style: hs(13, color: const Color(0xB3FFFFFF))),
+              Text(money(s.incomeMonth), style: hs(40, w: FontWeight.w700, ls: -1)),
+              Text('Sueldos ${money(s.totalIncome)} · extras ${money(s.extraIncomeMonth)}',
+                  style: hs(13, w: FontWeight.w600, color: mint)),
             ]),
-            const SizedBox(height: 10),
-            Text(
-                'Los pagos de deudas usan el $debtPct% de lo que ganan. Lo saludable es menos de 35%.',
-                style: ts(p, 13, w: FontWeight.w600, color: debtPct > 35 ? p.red : p.green, h: 1.45)),
-          ]),
-        ),
-        const SizedBox(height: 14),
-        for (var i = 0; i < s.people.length; i++) ...[
-          _person(p, s, i, aportes[i]),
-          const SizedBox(height: 12),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              panel(
+                p,
+                radius: 26,
+                pad: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    iconTile(Ic.user, p.green, p.okBg, size: 36),
+                    const SizedBox(width: 10),
+                    Text('Tu nombre', style: ts(p, 15, w: FontWeight.w700)),
+                  ]),
+                  const SizedBox(height: 10),
+                  box(_EditField(
+                    initial: s.userName,
+                    hint: 'Cómo quieres que te salude la app',
+                    style: ts(p, 16, w: FontWeight.w600),
+                    onDone: s.setUserName,
+                  )),
+                ]),
+              ),
+              const SizedBox(height: 14),
+              panel(
+                p,
+                radius: 26,
+                pad: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Sueldos de cada mes', style: ts(p, 17, w: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text('Escribe el nombre y lo que gana cada uno. Si es solo tu sueldo, deja los otros en 0.',
+                      style: ts(p, 12, color: p.muted, h: 1.4)),
+                  for (var i = 0; i < s.people.length; i++) ...[
+                    const SizedBox(height: 14),
+                    Row(children: [
+                      Expanded(
+                        flex: 5,
+                        child: box(_EditField(
+                          key: ValueKey('n$i${s.people[i].name}'),
+                          initial: s.people[i].name,
+                          hint: 'Nombre',
+                          style: ts(p, 15, w: FontWeight.w600),
+                          onDone: (v) => s.setPersonName(i, v),
+                        )),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 4,
+                        child: box(Row(children: [
+                          Text('S/ ', style: ts(p, 15, w: FontWeight.w700, color: p.muted)),
+                          Expanded(
+                            child: _EditField(
+                              key: ValueKey('i$i${s.people[i].income}'),
+                              initial: s.people[i].income > 0 ? s.people[i].income.toStringAsFixed(0) : '',
+                              hint: '0',
+                              numeric: true,
+                              style: ts(p, 15, w: FontWeight.w700),
+                              onDone: (v) => s.setIncome(i, parse(v)),
+                            ),
+                          ),
+                        ])),
+                      ),
+                    ]),
+                  ],
+                ]),
+              ),
+              const SizedBox(height: 14),
+              panel(
+                p,
+                radius: 26,
+                pad: const EdgeInsets.fromLTRB(18, 16, 10, 8),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Extras de ${monthsLong[s.now.month - 1]}', style: ts(p, 17, w: FontWeight.w600)),
+                  if (extras.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text('Aportes de familia, trabajos aparte, bonos...', style: ts(p, 13, color: p.muted)),
+                    ),
+                  for (final i in extras)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(children: [
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(i.label, style: ts(p, 15, w: FontWeight.w700)),
+                            Text('${dueShort(i.date)} · ${i.tag}', style: ts(p, 12, color: p.muted)),
+                          ]),
+                        ),
+                        Text('+${money(i.amount)}', style: ts(p, 15, w: FontWeight.w600, color: p.green, tab: true)),
+                        GestureDetector(
+                          onTap: () => s.removeIncome(i.id),
+                          behavior: HitTestBehavior.opaque,
+                          child: SizedBox(width: 36, height: 30, child: Icon(Ic.close, size: 16, color: p.muted)),
+                        ),
+                      ]),
+                    ),
+                ]),
+              ),
+              const SizedBox(height: 14),
+              wideButton(p, 'Agregar ingreso extra', () => showIncomeSheet(context)),
+            ]),
+          ),
         ],
-        panel(
-          p,
-          pad: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Ic.people, color: p.pri, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                  'Los tres verán los mismos pagos en su iPhone. Cuando uno marque un pago, los demás lo verán.',
-                  style: ts(p, 13, color: p.muted, h: 1.45)),
-            ),
-          ]),
-        ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _person(Pal p, AppStore s, int i, double aporte) {
-    final x = s.people[i];
-    final o = _owners[i];
-    final left = x.income - aporte;
-    final cobro = i == 0 ? 'Cobras el día ${x.payDay}' : 'Cobra el día ${x.payDay}';
-    return panel(
-      p,
-      pad: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(children: [
-        Row(children: [
-          Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: p.ownBg[o], shape: BoxShape.circle),
-            child: Text(i == 2 ? '3' : x.short[0],
-                style: ts(p, 16, w: FontWeight.w700, color: p.own[o])),
+class IncomeSheet extends StatefulWidget {
+  const IncomeSheet({super.key});
+
+  @override
+  State<IncomeSheet> createState() => _IncomeSheetState();
+}
+
+class _IncomeSheetState extends State<IncomeSheet> {
+  final labelC = TextEditingController();
+  final amountC = TextEditingController();
+  String tag = 'Extra';
+  String? error;
+
+  @override
+  void dispose() {
+    labelC.dispose();
+    amountC.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Pal.of(context);
+    final s = StoreScope.of(context);
+    InputDecoration deco(String hint) => InputDecoration(
+          hintText: hint,
+          hintStyle: ts(p, 16, color: p.muted),
+          isCollapsed: true,
+          border: InputBorder.none,
+        );
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        decoration: BoxDecoration(
+          color: p.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Ingreso extra', style: ts(p, 20, w: FontWeight.w700)),
+          const SizedBox(height: 14),
+          Text('Qué fue', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: labelC,
+            style: ts(p, 16, w: FontWeight.w600),
+            cursorColor: p.green,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: deco('Aporte de mamá, trabajo extra...'),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(x.name, style: ts(p, 16, w: FontWeight.w700)),
-              Text(cobro, style: ts(p, 12, color: p.muted)),
-            ]),
+          const SizedBox(height: 10),
+          divider(p),
+          const SizedBox(height: 12),
+          Text('Monto', style: ts(p, 12, w: FontWeight.w600, color: p.muted)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: amountC,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: ts(p, 22, w: FontWeight.w700),
+            cursorColor: p.green,
+            decoration: deco('S/ 0.00'),
           ),
-          stepper(p,
-              value: money(x.income),
-              onLess: x.income <= 0 ? null : () => s.setIncome(i, x.income - 250),
-              onMore: x.income >= 30000 ? null : () => s.setIncome(i, x.income + 250),
-              lessLabel: 'Bajar sueldo de ${x.name} S/ 250',
-              moreLabel: 'Subir sueldo de ${x.name} S/ 250',
-              width: 70),
+          const SizedBox(height: 10),
+          divider(p),
+          const SizedBox(height: 12),
+          Row(children: [
+            for (final t in const ['Extra', 'Familia']) ...[
+              outlineChip(p, t, on: tag == t, onTap: () => setState(() => tag = t)),
+              const SizedBox(width: 8),
+            ],
+          ]),
+          if (error != null) ...[
+            const SizedBox(height: 8),
+            Text(error!, style: ts(p, 12, w: FontWeight.w700, color: p.red)),
+          ],
+          const SizedBox(height: 16),
+          wideButton(p, 'Guardar ingreso', () {
+            final a = double.tryParse(amountC.text.trim().replaceAll(',', '.'));
+            if (a == null || a <= 0) {
+              setState(() => error = 'Pon un monto mayor que cero');
+              return;
+            }
+            final l = labelC.text.trim();
+            s.addIncome(IncomeItem(
+              id: 'i${DateTime.now().microsecondsSinceEpoch}',
+              label: l.isEmpty ? tag : l,
+              amount: a,
+              date: DateTime(s.now.year, s.now.month, s.now.day),
+              tag: tag,
+            ));
+            Navigator.of(context).pop();
+          }),
         ]),
-        const SizedBox(height: 10),
-        divider(p),
-        const SizedBox(height: 10),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text.rich(TextSpan(style: ts(p, 13, color: p.muted), children: [
-            TextSpan(text: i == 0 ? 'Aportas ' : 'Aporta '),
-            TextSpan(text: money(aporte), style: ts(p, 13, w: FontWeight.w700, tab: true)),
-          ])),
-          Text.rich(TextSpan(style: ts(p, 13, color: p.muted), children: [
-            TextSpan(text: i == 0 ? 'Te quedan ' : 'Le quedan '),
-            TextSpan(
-                text: money(left),
-                style: ts(p, 13, w: FontWeight.w700, color: left < 0 ? p.red : p.text, tab: true)),
-          ])),
-        ]),
-      ]),
+      ),
     );
   }
 }
