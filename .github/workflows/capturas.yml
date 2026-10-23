@@ -1,0 +1,74 @@
+# Toma capturas de la versión web (computadora y celular) y las guarda en la rama "capturas".
+name: Capturas
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: capturas
+  cancel-in-progress: true
+jobs:
+  capturas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Carpeta web
+        run: flutter create --platforms=web --org com.auribe --project-name cero .
+      - name: Logo y datos de la app
+        run: |
+          cp branding/icon-192.png web/icons/Icon-192.png
+          cp branding/icon-512.png web/icons/Icon-512.png
+          cp branding/icon-maskable-192.png web/icons/Icon-maskable-192.png
+          cp branding/icon-maskable-512.png web/icons/Icon-maskable-512.png
+          cp branding/favicon.png web/favicon.png
+          cp branding/apple-touch-icon.png web/icons/apple-touch-icon.png
+          sed -i 's#<title>.*</title>#<title>Cero</title>#' web/index.html
+          sed -i 's#<link rel="apple-touch-icon" href="icons/Icon-192.png">#<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">#' web/index.html
+          sed -i 's#<meta name="apple-mobile-web-app-title" content=".*">#<meta name="apple-mobile-web-app-title" content="Cero">#' web/index.html
+          sed -i 's#<meta name="theme-color"[^>]*>##' web/index.html
+          sed -i 's#<head>#<head>\n  <meta name="theme-color" content="\#000000">#' web/index.html
+          sed -i 's#"background_color": *"[^"]*"#"background_color": "\#000000"#; s#"theme_color": *"[^"]*"#"theme_color": "\#000000"#; s#"name": *"cero"#"name": "Cero"#; s#"short_name": *"cero"#"short_name": "Cero"#' web/manifest.json
+      - run: flutter pub get
+      - run: flutter build web --release --base-href /cero/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Capturas
+        run: |
+          mkdir -p site && cp -r build/web site/cero
+          (cd site && python3 -m http.server 8080 >/dev/null 2>&1 &)
+          mkdir -p shots && cd shots && npm init -y >/dev/null && npm i playwright@1.47.2 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          cat > shot.js <<'JS'
+          const { chromium } = require('playwright');
+          (async () => {
+            const b = await chromium.launch();
+            const go = async (name, w, h, clicks) => {
+              const pg = await b.newPage({ viewport: { width: w, height: h } });
+              await pg.goto('http://localhost:8080/cero/');
+              await pg.waitForTimeout(6000);
+              for (const [x, y] of clicks) { await pg.mouse.click(x, y); await pg.waitForTimeout(1200); }
+              await pg.screenshot({ path: name + '.png', fullPage: false });
+              await pg.close();
+            };
+            await go('escritorio-hoy', 1440, 900, []);
+            await go('escritorio-deudas', 1440, 900, [[110, 194]]);
+            await go('escritorio-gastos', 1440, 900, [[110, 248]]);
+            await go('escritorio-plan', 1440, 900, [[110, 302]]);
+            await go('celular-hoy', 390, 844, []);
+            await b.close();
+          })();
+          JS
+          node shot.js
+      - name: Guardar en la rama capturas
+        run: |
+          cd shots
+          git init -q && git checkout -q -b capturas
+          git add *.png
+          git -c user.name=ci -c user.email=ci@example.com commit -q -m "Capturas ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" capturas
