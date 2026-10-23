@@ -75,9 +75,11 @@ class HoyScreen extends StatelessWidget {
           bottom: 26,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const CeroMark(size: 34, ring: Colors.white),
-              const SizedBox(width: 8),
-              Text('Cero', style: hs(26, w: FontWeight.w600, ls: -0.5)),
+              if (!isWide(context)) ...[
+                const CeroMark(size: 34, ring: Colors.white),
+                const SizedBox(width: 8),
+                Text('Cero', style: hs(26, w: FontWeight.w600, ls: -0.5)),
+              ],
               const Spacer(),
               circleBtn(Ic.bell, () {
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AjustesScreen()));
@@ -282,7 +284,7 @@ class HoyScreen extends StatelessWidget {
         ]),
       ),
       const SizedBox(height: 12),
-      Row(children: [
+      IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         kpi(Ic.debts, p.red, 'Deuda total', money(s.totalDebt),
             'Este mes baja ${money(s.capitalThisMonth)}', onTap: () => onTab(1)),
         const SizedBox(width: 12),
@@ -290,9 +292,9 @@ class HoyScreen extends StatelessWidget {
             cuotas - cPaid <= 0.5 ? 'Todas pagadas' : 'Pagaste ${money(cPaid)} · faltan ${money(cuotas - cPaid)}',
             frac: cuotas > 0 ? cPaid / cuotas : 1,
             onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PagosScreen()))),
-      ]),
+      ])),
       const SizedBox(height: 12),
-      Row(children: [
+      IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         kpi(Ic.receipt, kFijo, 'Gastos fijos', money(fixed),
             fixed - fPaid <= 0.5 ? 'Todos pagados' : 'Pagaste ${money(fPaid)} · faltan ${money(fixed - fPaid)}',
             frac: fixed > 0 ? fPaid / fixed : 1, onTap: () => onTab(2)),
@@ -300,7 +302,7 @@ class HoyScreen extends StatelessWidget {
         kpi(Ic.snack, kHormiga, 'Hormiga y variables', money(gastado),
             'Hormiga ${money(s.hormigaSpent)} de ${money(s.hormigaCap)}',
             frac: s.hormigaCap > 0 ? s.hormigaSpent / s.hormigaCap : 0, onTap: () => onTab(2)),
-      ]),
+      ])),
       const SizedBox(height: 12),
       _interestCard(context, p, s),
     ]);
