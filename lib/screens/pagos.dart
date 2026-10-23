@@ -65,7 +65,7 @@ class _PagosScreenState extends State<PagosScreen> {
     final today = DateTime(s.now.year, s.now.month, s.now.day);
     final selected = sel ?? today;
 
-    return Scaffold(
+    return CeroPage(
       backgroundColor: p.bg,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 40),

@@ -130,7 +130,7 @@ class _CronogramaScreenState extends State<CronogramaScreen> {
           ]),
         );
 
-    return Scaffold(
+    return CeroPage(
       backgroundColor: p.bg,
       body: Column(children: [
         Expanded(

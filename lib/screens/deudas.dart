@@ -86,7 +86,7 @@ class _DeudasScreenState extends State<DeudasScreen> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: Column(children: [
+          child: twoCol(context, leftFlex: 2, rightFlex: 3, left: [
             panel(
               p,
               radius: 26,
@@ -109,7 +109,7 @@ class _DeudasScreenState extends State<DeudasScreen> {
                 ]),
               ]),
             ),
-            const SizedBox(height: 14),
+          ], right: [
             panel(
               p,
               radius: 26,

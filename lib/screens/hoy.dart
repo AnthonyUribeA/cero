@@ -99,13 +99,13 @@ class HoyScreen extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: Column(children: [
+          child: twoCol(context, left: [
             if (s.needsSetup) ...[
               _setup(context, p, s),
               const SizedBox(height: 16),
             ],
             _dashboard(context, p, s),
-            const SizedBox(height: 16),
+          ], right: [
             Row(children: [
               tile(Ic.target, 'Plan', () => onTab(3)),
               tile(Ic.wallet, 'Gastos', () => onTab(2)),

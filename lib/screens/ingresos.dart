@@ -101,7 +101,7 @@ class IngresosScreen extends StatelessWidget {
           child: child,
         );
 
-    return Scaffold(
+    return CeroPage(
       backgroundColor: p.bg,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 40),

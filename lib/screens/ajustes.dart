@@ -37,7 +37,7 @@ class AjustesScreen extends StatelessWidget {
     Widget sw(int i, String t, String sub) =>
         switchTile(p, t, sub, s.alerts[i], (v) => s.setAlert(i, v));
 
-    return Scaffold(
+    return CeroPage(
       backgroundColor: p.bg,
       body: SafeArea(
         child: ListView(

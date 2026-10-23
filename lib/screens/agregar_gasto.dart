@@ -77,7 +77,7 @@ class _AgregarGastoScreenState extends State<AgregarGastoScreen> {
           border: InputBorder.none,
         );
 
-    return Scaffold(
+    return CeroPage(
       backgroundColor: p.bg,
       body: Column(children: [
         CeroHeader(

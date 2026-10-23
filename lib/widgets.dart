@@ -213,12 +213,15 @@ class CeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.of(context).padding.top;
-    return Container(
+    final wide = isWide(context);
+    final box = Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
+        borderRadius: wide
+            ? BorderRadius.circular(30)
+            : const BorderRadius.vertical(bottom: Radius.circular(34)),
       ),
       child: Stack(
         children: [
@@ -235,12 +238,14 @@ class CeroHeader extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 14, 20, bottom),
+            padding: EdgeInsets.fromLTRB(wide ? 28 : 20, wide ? 26 : top + 14, wide ? 28 : 20, bottom),
             child: child,
           ),
         ],
       ),
     );
+    if (!wide) return box;
+    return Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 0), child: box);
   }
 }
 
@@ -383,7 +388,7 @@ Route<void> subPage(Widget child) {
   return MaterialPageRoute<void>(
     builder: (context) {
       final p = Pal.of(context);
-      return Scaffold(
+      return CeroPage(
         backgroundColor: p.bg,
         body: SafeArea(
           child: Column(
@@ -403,4 +408,40 @@ Route<void> subPage(Widget child) {
       );
     },
   );
+}
+
+/// Pantalla de computadora (ancho de tablet en horizontal o más).
+bool isWide(BuildContext c) => MediaQuery.sizeOf(c).width >= 900;
+
+/// En computadora centra el contenido con un ancho máximo.
+Widget deskBody(BuildContext c, Widget child, {double max = 760}) {
+  if (!isWide(c)) return child;
+  return Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(constraints: BoxConstraints(maxWidth: max), child: child),
+  );
+}
+
+/// Dos columnas en computadora; una sola, una debajo de otra, en el celular.
+Widget twoCol(BuildContext context,
+    {required List<Widget> left, required List<Widget> right, int leftFlex = 3, int rightFlex = 2}) {
+  if (!isWide(context)) {
+    return Column(children: [...left, const SizedBox(height: 16), ...right]);
+  }
+  return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Expanded(flex: leftFlex, child: Column(children: left)),
+    const SizedBox(width: 20),
+    Expanded(flex: rightFlex, child: Column(children: right)),
+  ]);
+}
+
+/// Página secundaria: en computadora queda centrada y no estirada.
+class CeroPage extends StatelessWidget {
+  final Color backgroundColor;
+  final Widget body;
+  const CeroPage({super.key, required this.backgroundColor, required this.body});
+
+  @override
+  Widget build(BuildContext context) =>
+      Scaffold(backgroundColor: backgroundColor, body: deskBody(context, body));
 }
